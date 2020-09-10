@@ -10,6 +10,9 @@ Follow the environment in [faster-rcnn.pytorch](https://github.com/jwyang/faster
 ### Installation
 
 1. Clone this repository.
+    ```bash
+    git clone https://github.com/ai4r/AIR-ObjectDetection.pytorch 
+    ```
 
 2. Clone [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch) and install on faster-rcnn.pytorch folder.
 
@@ -35,3 +38,5 @@ Follow the environment in [faster-rcnn.pytorch](https://github.com/jwyang/faster
    python demo.py
    ```
 2. press key 'd' and see the result.
+
+### License
