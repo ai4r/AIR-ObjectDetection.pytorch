@@ -11,15 +11,27 @@ Follow the environment in [faster-rcnn.pytorch](https://github.com/jwyang/faster
 
 1. Clone this repository.
     ```bash
-    git clone https://github.com/ai4r/AIR-ObjectDetection.pytorch 
+    git clone https://github.com/ai4r/AIR-ObjectDetection.pytorch
+    cd AIR-ObjectDetection.pytorch
     ```
 
 2. Clone [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch) and install on faster-rcnn.pytorch folder.
+    ```bash
+    git clone https://github.com/jwyang/faster-rcnn.pytorch.git
+    cd faster-rcnn.pytorch && mkdir data
+    pip install -r requirements.txt
+    cd lib
+    sh make.sh 
+    ```
 
-3. Copy faster-rcnn.pytorch/cfgs folder to models/
+3. Make model folder and copy faster-rcnn.pytorch/cfgs folder to models/
+    ```bash
+    cd ../.. && mkdir models
+    mkdir models/InstModel
+    cp -r faster-rcnn.pytorch/cfgs models
+    ```
 
-4. Download [the model file](https://www.dropbox.com/s/be0isevd22eikqb/faster_rcnn_1_10_14657.pth?dl=0) from [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch).
-   
+4. Download [the model file](https://www.dropbox.com/s/be0isevd22eikqb/faster_rcnn_1_10_14657.pth?dl=0) from [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch) and move to models folder.
    
    
 ### Run
