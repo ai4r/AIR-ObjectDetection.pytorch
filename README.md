@@ -29,14 +29,16 @@ Follow the environment in [faster-rcnn.pytorch](https://github.com/jwyang/faster
    ```bash
    python demo.py
    ```
-2. press key 'r' and type two information, category_name and instance_name. 
-3. show the object instance until predefined number of images are captured. 
+2. Press key 'r' and type two information, category_name and instance_name. 
+3. Show the object instance until predefined number of images are captured. 
    
 #### Object instance detection and recognition
 1. Run the demo code.
    ```bash
    python demo.py
    ```
-2. press key 'd' and see the result.
+2. Press key 'd' and see the result.
 
 ### License
+
+See LICENSE.md
