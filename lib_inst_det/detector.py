@@ -1,3 +1,5 @@
+# This code is copied and modified from https://github.com/jwyang/faster-rcnn.pytorch/blob/master/demo.py
+
 import _init_paths
 import os
 import torch
