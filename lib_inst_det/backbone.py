@@ -1,3 +1,5 @@
+# This file is copied and modified from https://github.com/jindongwang/transferlearning/blob/master/code/deep/DAAN/model/backbone.py
+    
 import numpy as np
 import torch
 import torch.nn as nn
