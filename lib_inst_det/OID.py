@@ -12,7 +12,7 @@ from PIL import Image
 import glob
 
 # detector - faster-rcnn.pytorch
-# classifier - prototype + cosine
+# classifier - prototype + cosine or linear fc
 # Visualize - draw bbox
 def resizeImagewithBorderRepeat(img_org, size, padding_type = cv2.BORDER_REPLICATE):
     if len(img_org.shape) == 2:
