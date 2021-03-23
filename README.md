@@ -31,7 +31,7 @@ Follow the environment in [faster-rcnn.pytorch](https://github.com/jwyang/faster
     cp -r faster-rcnn.pytorch/cfgs models
     ```
 
-4. Download [the model file](https://www.dropbox.com/s/be0isevd22eikqb/faster_rcnn_1_10_14657.pth?dl=0) from [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch) and move to models folder.
+4. Download [the model files](https://drive.google.com/drive/folders/1aKOKMjdFcnGWdZo_VywG9pwlRyiUCodc) and move to models folder.
    
    
 ### Run
