@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     # load the detector ans classifier
     # oid = OID('models')     # everything is under this path
-    oid = OIDv2('models', use_COCO_detector=False, use_AIR15_detector=True)     # everything is under this path
+    oid = OIDv2('models', use_COCO_detector=False, use_AIR15_detector=True, use_comment_generator=True)     # everything is under this path
 
     count = 0
     while True:

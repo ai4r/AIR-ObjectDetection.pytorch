@@ -128,13 +128,15 @@ class Detector():
         # self.display_classes = self.classes
         self.display_classes = {
             # 'bottle': '약통',
-            'cup': '컵',
-            # 'cell phone': '핸드폰',
-            'remote': '리모컨',
+            # 'cup': '컵',
+            # 'remote': '리모컨',
             # 'tv': 'TV',
             # 'refrigerator': '냉장고',
             # 'couch': '소파',
             # 'bed': '침구',
+            # 'cell phone': '핸드폰',
+            'tie': '넥타이',
+            'umbrella': '우산',
         }
         print('self.display_classes:', self.display_classes)
 
