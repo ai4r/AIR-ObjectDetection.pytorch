@@ -4,12 +4,14 @@ import torch.nn as nn
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
 from lib_inst_det.detector import Detector
-from lib_inst_det.nnet import NNClassifier
+from lib_inst_det.detectorAIR15 import DetectorAIR15
+from lib_inst_det.nnet import NNClassifier, GMMClassifier#, kNNClassifier
 import datetime
 import cv2
 import numpy as np
 from PIL import Image
 import glob
+from PIL import Image, ImageDraw, ImageFont
 
 # detector - faster-rcnn.pytorch
 # classifier - prototype + cosine or linear fc
@@ -99,7 +101,7 @@ class OID(nn.Module):
         num_saved_images = 0
         if biggest_bbox is not None:
             # crop
-            crop_image = image[y1:y2, x1:x2, :]
+            crop_image = image[biggest_bbox[1]:biggest_bbox[3], biggest_bbox[0]:biggest_bbox[2], :]
             self.classifier.save_DB(crop_image, category_name, instance_name)
 
         num_saved_images = len(list_files(os.path.join(self.path_to_InstModel, category_name, instance_name), 'png'))
@@ -139,10 +141,136 @@ class OID(nn.Module):
         return image
 
 
+class OIDv2(nn.Module):
+    def __init__(self, baseFolder='models'):
+        self.path_to_InstModel = os.path.join(baseFolder, 'InstModel')
+
+        self.detectorCOCO5 = Detector(baseFolder)           # load models and settings
+        self.detectorAIR15 = DetectorAIR15(baseFolder)  # load models and settings
+        self.classifier = ModelManagerNN(self.path_to_InstModel)
+
+        self.map_classname_to_korean = {**self.detectorCOCO5.display_classes, **self.detectorAIR15.display_classes}
+
+    def detect(self, image):
+        ret_bbox_score_class_COCO5 = self.detectorCOCO5.detect(image)
+        ret_bbox_score_class_AIR15 = self.detectorAIR15.detect(image)
+
+        ret_bbox_score_class = ret_bbox_score_class_COCO5 + ret_bbox_score_class_AIR15
+        # crop, classify, replace, result
+        ret_bbox_score_inst = self.classifier.classify(image, ret_bbox_score_class)
+
+        # ret_bbox_score_inst = ret_bbox_score_class_COCO5 + ret_bbox_score_inst_AIR15
+
+        return ret_bbox_score_inst
+
+    def register_prepare(self, category_name, instance_name):
+        # delete and make folder
+        print('delete all images of %s - %s' % (category_name, instance_name))
+        self.classifier.delete_DB(category_name, instance_name)
+
+    def register(self, image, category_name, instance_name):
+        import pdb
+        # detect the category_name object and save into image
+        ret_bbox_score_class_AIR15 = self.detectorAIR15.detect(image)
+        ret_bbox_score_class_COCO = self.detectorCOCO5.detect(image)
+        ret_bbox_score_class = ret_bbox_score_class_AIR15 + ret_bbox_score_class_COCO
+
+        # find the biggest bbox
+        biggest_area = 0
+        biggest_bbox = None
+        ret = []
+        for item in ret_bbox_score_class:
+            [x1, y1, x2, y2] = item[0]
+            # score = item[1]
+            class_name = item[2]
+            area = (x2 - x1) * (y2 - y1)
+
+            if (class_name == category_name) and (area > biggest_area):
+                biggest_bbox = [x1, y1, x2, y2]
+                ret = [item]
+
+        num_saved_images = 0
+        if biggest_bbox is not None:
+            # crop
+            crop_image = image[biggest_bbox[1]:biggest_bbox[3], biggest_bbox[0]:biggest_bbox[2], :]
+            self.classifier.save_DB(crop_image, category_name, instance_name)
+
+        num_saved_images = len(list_files(os.path.join(self.path_to_InstModel, category_name, instance_name), 'png'))
+
+        return ret, num_saved_images
+
+    def register_finish(self):
+        self.classifier.reload_DB()
+
+
+    def visualize(self, image, list_info, box_color=(0, 204, 0), text_color=(255, 255, 255),
+                                   text_bg_color=(0, 204, 0), fontsize=20, thresh=0.8, draw_score=True,
+                                   draw_text_out_of_box=True, map_classname_to_korean=None):
+        """Visual debugging of detections."""
+        print(list_info)
+
+        font = ImageFont.truetype('NanumGothic.ttf', fontsize)
+        image_pil = Image.fromarray(image)
+        image_draw = ImageDraw.Draw(image_pil)
+
+        for item in list_info:
+            # item has 4 elements: bbox(4)_score(1)_class(str)
+            # item has 6 elements: bbox(4)_score(1)_class(str)_score(1)_instance(str)
+            bbox = item[0]
+            score = item[1]
+            class_name = item[2]
+
+            if map_classname_to_korean is not None:
+                # red: big object
+                # green: handheld object w/o owner
+                # blue: handheld object w owner
+                if class_name in ['tv', 'refrigerator', 'couch', 'bed']:
+                    box_color = text_bg_color = (0, 0, 204)
+                else:
+                    box_color = text_bg_color = (0, 204, 0)
+
+                if class_name in map_classname_to_korean.keys():
+                    class_name = map_classname_to_korean[class_name]
+
+            if score > thresh:
+                image_draw.rectangle(bbox, outline=box_color, width=3)
+
+                if len(item) < 4:
+                    if draw_score:
+                        strText = '%s: %.3f' % (class_name, score)
+                    else:
+                        strText = class_name
+                else:
+                    box_color = text_bg_color = (204, 0, 0)
+                    score_i = item[3]
+                    inst_name = item[4]
+
+                    if draw_score:
+                        strText = '%s: %.3f (%s: %.3f)' % (class_name, score, inst_name, score_i)
+                    else:
+                        strText = '%s (%s)' % (class_name, inst_name)
+
+                text_w, text_h = font.getsize(strText)
+
+                if draw_text_out_of_box:
+                    image_draw.rectangle((bbox[0], bbox[1] - 20, bbox[0] + text_w, bbox[1] - 20 + text_h),
+                                      fill=text_bg_color)
+                    image_draw.text((bbox[0], bbox[1] - 20), strText, font=font, fill=text_color)
+                else:
+                    image_draw.rectangle((bbox[0], bbox[1], bbox[0] + text_w, bbox[1] + text_h), fill=text_bg_color)
+                    image_draw.text((bbox[0], bbox[1]), strText, font=font, fill=text_color)
+
+        image = np.array(image_pil)
+
+        return image
+
+
 # Manager between DB <-> object classifier
 class ModelManagerNN():
     def __init__(self, instBase_path, num_hid_ftr=2048, fix_base_net=True, num_layer=1, fc_type='linear', force_to_train=False):
         self.modelList = []
+        self.modelListGMM = []
+        self.modelListkNN = []
         self.modelCategorynameList = []
         self.modelInstancenameList = []
         self.instBase_path = instBase_path
@@ -160,7 +288,9 @@ class ModelManagerNN():
 
     tr_transforms = transforms.Compose([
                             transforms.Scale(256),
-                            transforms.CenterCrop(224),
+                            transforms.RandomCrop(224),
+                            transforms.RandomHorizontalFlip(0.5),
+                            # transforms.Resize((224, 224)),
                             transforms.ToTensor(),
                             transforms.Normalize((0.5, 0.5, 0.5),
                                                  (0.5, 0.5, 0.5))
@@ -168,6 +298,22 @@ class ModelManagerNN():
     ts_transforms = transforms.Compose([
         transforms.Scale(256),
         transforms.CenterCrop(224),
+        # transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5),
+                             (0.5, 0.5, 0.5))
+    ])
+
+    tr_transforms_GMM = transforms.Compose([
+        transforms.Scale(24),
+        transforms.RandomCrop(16),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5),
+                             (0.5, 0.5, 0.5))
+    ])
+    ts_transforms_GMM = transforms.Compose([
+        transforms.Scale(24),
+        transforms.RandomCrop(16),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5),
                              (0.5, 0.5, 0.5))
@@ -176,6 +322,8 @@ class ModelManagerNN():
 
     def reload_DB(self):
         self.modelList = []
+        self.modelListGMM = []
+        self.modelListkNN = []
         self.modelCategorynameList = []
         self.modelInstancenameList = []
 
@@ -198,18 +346,33 @@ class ModelManagerNN():
                                num_layer=self.num_layer,
                                fc_type=self.fc_type)  # construct classifier
 
+            gmmC = GMMClassifier(objCate,
+                                 num_cluster=1,
+                                 num_class=nb_classes)
+
+
+            # knnC = kNNClassifier(objCate,
+            #                      num_class=nb_classes)
+
+
+
             # try to load a model
             pth_path = os.path.join(path, objCate, 'model_frz%d_layer%d_nhid%d_fc%s_class%d.pt' % (self.fix_base_net, self.num_layer, self.num_hid_ftr, self.fc_type, nb_classes))
 
             if self.force_to_train:
-                suc = False
+                suc = [False, False, False]
             else:
-                suc = nnC.load(pth_path, nb_classes)        # fail when no file or numInstance in not same
+                suc1 = nnC.load(pth_path, nb_classes)        # fail when no file or numInstance in not same
+                suc2 = gmmC.load(os.path.join(path, objCate, 'gmmC.pkl'))
+                # suc3 = knnC.load(os.path.join(path, objCate, 'knnC.pkl'))
+                # suc = [suc1, suc2, suc3]
+                suc = [suc1, suc2]
 
             # TODO: check transform is right?
             dataset = dset.ImageFolder(root=os.path.join(path, objCate), transform=self.tr_transforms)
+            dataset_GMM = dset.ImageFolder(root=os.path.join(path, objCate), transform=self.tr_transforms_GMM)
 
-            if suc == False:
+            if all(suc) == False:
                 print('Fail to read the model file. Train the network')
 
                 if verbose:
@@ -217,10 +380,15 @@ class ModelManagerNN():
 
                 # dataX: n_data x dim (102400)
                 # dataY: list
-                nnC.train(dataset, learning_rate=self.lr)             # train classifier
-
-                # save the model
-                nnC.save(pth_path)
+                if not suc[0]:
+                    nnC.train(dataset, learning_rate=self.lr, stop_acc=0.90)             # train classifier
+                    nnC.save(pth_path) # save the model
+                if not suc[1]:
+                    gmmC.train(dataset_GMM)  # train classifier
+                    gmmC.save(pth_path)  # save the model
+                # if not suc[2]:
+                #     knnC.train(dataset)  # train classifier
+                #     knnC.save(pth_path)  # save the model
             else:
                 print('Success to read the model file')
                 print('\tpath: ', pth_path)
@@ -228,6 +396,8 @@ class ModelManagerNN():
                 print('\tinstances (%d): ' % nb_classes, listInst)
 
             self.modelList.append(nnC)      # add NNs to the list
+            self.modelListGMM.append(gmmC)  # add NNs to the list
+            # self.modelListkNN.append(knnC)  # add NNs to the list
             self.modelCategorynameList.append(objCate)
             self.modelInstancenameList.append(dataset.class_to_idx)
             print('\tclass_to_index:', dataset.class_to_idx)
@@ -256,10 +426,19 @@ class ModelManagerNN():
                 image_crop_resized_tensor.unsqueeze_(0)
                 image_crop_resized_tensor = image_crop_resized_tensor.cuda()
 
+                image_crop_resized_tensor_GMM = self.ts_transforms_GMM(image_crop_resized_pil)
+                image_crop_resized_tensor_GMM.unsqueeze_(0)
+                image_crop_resized_tensor_GMM = image_crop_resized_tensor_GMM.cuda()
+
                 # 2. pass it to the classifier
                 i_clf = self.modelCategorynameList.index(c_name)
 
-                inst_idx, inst_prob = self.modelList[i_clf].inference(image_crop_resized_tensor)
+                inst_idx_NN, inst_prob_NN = self.modelList[i_clf].inference(image_crop_resized_tensor)
+                inst_idx_GMM, inst_prob_GMM = self.modelListGMM[i_clf].inference(image_crop_resized_tensor_GMM)
+
+                # yochin debug
+                inst_idx = inst_idx_NN
+                inst_prob = inst_prob_NN
 
                 # 3. get the result and append it to the list
                 # nameSimilarInst = self.modelInstancenameList[i_clf][inst_idx]
@@ -268,7 +447,9 @@ class ModelManagerNN():
 
                 # print('NN result: %s %f' % (nameSimilarInst, probSimilarInst))
 
-            item.extend([probSimilarInst, nameSimilarInst])
+            if nameSimilarInst != '':
+                item.extend([probSimilarInst, nameSimilarInst])
+
             ret_bbox_score_inst.append(item)
 
         return ret_bbox_score_inst

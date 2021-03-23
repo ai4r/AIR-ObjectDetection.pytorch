@@ -101,6 +101,7 @@ class NNClassifier():
         # self.num_hid_ftr = num_hid_ftr
         # self.base_net = base_net
         self.NNet = NNet(num_class, num_hid_ftr, base_net, fix_base_net=fix_base_net, num_layer=num_layer, fc_type=fc_type).to(self.device)
+        self.NNet.cuda()
 
     # save the classifier to disk
     def save(self, path_to_model):
@@ -128,6 +129,8 @@ class NNClassifier():
 
             # if self.num_class == num_class_from_files:
             self.NNet.load_state_dict(model['model_state_dict'])
+            self.NNet.eval()
+
             ret = True
 
         return ret
@@ -190,3 +193,89 @@ class NNClassifier():
                     break
             else:
                 print('%d epoch: %f loss' % (epoch, loss_epoch / len(data_loader)))
+
+        self.NNet.eval()
+
+
+# additional classifiers
+# contains everything related to training and inference
+from sklearn.mixture import GaussianMixture
+import numpy as np
+class GMMClassifier():
+    def __init__(self, nameCategory, num_cluster, num_class, base_net='ResNet50'):
+        self.nameCategory = nameCategory.replace(' ', '_')
+        self.num_class = num_class
+        self.num_cluster = num_cluster
+        self.sharedNet = backbone.network_dict[base_net]()
+        self.sharedNet.cuda()
+
+        self.list_GMMs = []
+
+    # save the classifier to disk
+    def save(self, path_to_model):
+        # torch.save({
+        #     'nameCategory': self.nameCategory,
+        #     # 'num_class': self.num_class,
+        #     # 'num_hid_ftr': self.num_hid_ftr,
+        #     # 'base_net': self.base_net,
+        #     'model_state_dict': self.NNet.state_dict()
+        # }, path_to_model)
+        pass
+
+    # load the classifier from disk
+    def load(self, path_to_model):
+        # load information and network
+        ret = False
+
+        # if os.path.exists(path_to_model):
+        #     print('load model: ', path_to_model)
+        #     model = torch.load(path_to_model)
+        #
+        #     self.nameCategory = model['nameCategory']
+        #     # self.num_class = model['num_class']
+        #     # self.num_hid_ftr = model['num_hid_ftr']
+        #     # self.base_net = model['base_net']
+        #
+        #     # if self.num_class == num_class_from_files:
+        #     self.NNet.load_state_dict(model['model_state_dict'])
+        #     self.NNet.eval()
+        #
+        #     ret = True
+
+        return ret
+
+
+    def inference(self, x):
+        # ftrx = self.sharedNet(x.cuda())
+        ftrx = x.view(x.shape[0], -1)
+        np_x = ftrx.cpu().detach().numpy()
+        logprob = np.array([self.list_GMMs[i_class].score_samples(np_x) for i_class in range(self.num_class)])
+        y_est = np.argmax(logprob, axis=0)
+        y_prob = np.exp(logprob)
+        y_prob = y_prob / sum(y_prob)
+
+        return y_est, y_prob[y_est]
+
+    def train(self, imageloader):
+        data_loader = DataLoader(imageloader, batch_size=len(imageloader), shuffle=False)
+        X, Y = next(iter(data_loader))
+
+        # ftrX = self.sharedNet(X.cuda())
+        ftrX = X.view(X.shape[0], -1)
+
+        np_x = ftrX.cpu().detach().numpy()
+        np_y = Y.cpu().detach().numpy()
+
+        print(ftrX.shape)       # n_data, n_dim
+        print(Y)                # n_data
+
+        for i_class in range(self.num_class):
+            self.list_GMMs.append(GaussianMixture(n_components=self.num_cluster, covariance_type='spherical').fit(np_x[Y==i_class, :]))
+
+        # calculate accuracy
+        logprob = np.array([self.list_GMMs[i_class].score_samples(np_x) for i_class in range(self.num_class)])
+        logprob = np.transpose(logprob)
+        predicted_class = np.argmax(logprob, axis=1)
+        acc = (predicted_class == np_y).mean()
+
+        print('GMM: %f acc' % acc)

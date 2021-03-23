@@ -30,9 +30,9 @@ import pprint
 # every complex things are in this class
 # user needs just to call the APIs.
 # detector - faster-rcnn.pytorch
-class Detector():
+class DetectorAIR15():
     def __init__(self, baseFolder='models', threshold=0.9):
-        super(Detector, self).__init__()
+        super(DetectorAIR15, self).__init__()
 
         self.cfg = __import__('model').utils.config.cfg
 
@@ -74,9 +74,11 @@ class Detector():
             '--cuda',
         ]
 
-
+        # load_name = 'output/MSCOCO/res101/faster_rcnn_1_10_14657.pth'
         # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_14657.pth')
-        load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_14657_Resnet101_COCO.pth')
+        # load_name = os.path.join(baseFolder, 'FRCN_ls_anchors4_cocoPret', 'res101', 'faster_rcnn_1_10_9999.pth')  # w/ bottle class
+        load_name = os.path.join(baseFolder, 'FRCN_ls_anchors4_cocoPret_allset_wo_bottle_wNewDB', 'res101', 'faster_rcnn_1_10_9999.pth') # w/o bottle class
+
 
         self.thresh = threshold
 
@@ -114,29 +116,43 @@ class Detector():
 
         self.classes = np.asarray([
             '__background__',  # always index 0
-            'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-            'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
-            'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-            'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
-            'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-            'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-            'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
-            'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
-            'teddy bear', 'hair drier', 'toothbrush'
+            'cup',
+            'pen',
+            'hat',
+            'mobile_phone',
+            'sock',
+            'glasses',
+            'towel',
+            'cane_stick',
+            'newspaper',
+            'remote',
+            'key',
+            'wallet',
+            'pack',
+            'medicine_case',
+            # 'bottle',
+            'medicine_packet',
         ])
 
         # self.display_classes = self.classes
         self.display_classes = {
-            # 'bottle': '약통',
             'cup': '컵',
-            # 'cell phone': '핸드폰',
+            'pen': '펜',
+            'hat': '모자',
+            'mobile_phone': '핸드폰',
+            'sock': '양말',
+            'glasses': '안경',
+            'towel': '수건',
+            'cane_stick': '지팡이',
+            'newspaper': '신문',
             'remote': '리모컨',
-            # 'tv': 'TV',
-            # 'refrigerator': '냉장고',
-            # 'couch': '소파',
-            # 'bed': '침구',
+            'key': '열쇠',
+            'wallet': '지갑',
+            'pack': '담배갑',
+            'medicine_case': '약통',
+            # 'bottle': '약통',
+            'medicine_packet': '약봉지',
         }
-        print('self.display_classes:', self.display_classes)
 
         # initilize the network here.
         if self.args.net == 'vgg16':
