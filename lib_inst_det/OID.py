@@ -142,18 +142,44 @@ class OID(nn.Module):
 
 
 class OIDv2(nn.Module):
-    def __init__(self, baseFolder='models'):
+    def __init__(self, baseFolder='models', use_COCO_detector=False, use_AIR15_detector=True):
         self.path_to_InstModel = os.path.join(baseFolder, 'InstModel')
 
-        self.detectorCOCO5 = Detector(baseFolder)           # load models and settings
-        self.detectorAIR15 = DetectorAIR15(baseFolder)  # load models and settings
+        self.use_AIR15_detector = use_AIR15_detector
+        self.use_COCO_detector = use_COCO_detector
+
+        self.map_classname_to_korean = {}
+
+        if self.use_COCO_detector:
+            self.detectorCOCO5 = Detector(baseFolder)           # load models and settings
+            self.map_classname_to_korean.update(**self.detectorCOCO5.display_classes)
+        else:
+            self.detectorCOCO5 = None
+
+        if self.use_AIR15_detector:
+            self.detectorAIR15 = DetectorAIR15(baseFolder)  # load models and settings
+            self.map_classname_to_korean.update(**self.detectorAIR15.display_classes)
+        else:
+            self.detectorAIR15 = None
+
+        if not self.use_COCO_detector and not self.use_AIR15_detector:
+            print('Both detectors are not activated. Please check it.')
+
         self.classifier = ModelManagerNN(self.path_to_InstModel)
 
-        self.map_classname_to_korean = {**self.detectorCOCO5.display_classes, **self.detectorAIR15.display_classes}
-
     def detect(self, image):
-        ret_bbox_score_class_COCO5 = self.detectorCOCO5.detect(image)
-        ret_bbox_score_class_AIR15 = self.detectorAIR15.detect(image)
+        if self.use_COCO_detector:
+            ret_bbox_score_class_COCO5 = self.detectorCOCO5.detect(image)
+        else:
+            ret_bbox_score_class_COCO5 = []
+
+        if self.use_AIR15_detector:
+            ret_bbox_score_class_AIR15 = self.detectorAIR15.detect(image)
+        else:
+            ret_bbox_score_class_AIR15 = []
+
+        if not self.use_COCO_detector and not self.use_AIR15_detector:
+            print('Both detectors are not activated. Please check it.')
 
         ret_bbox_score_class = ret_bbox_score_class_COCO5 + ret_bbox_score_class_AIR15
         # crop, classify, replace, result
@@ -269,8 +295,8 @@ class OIDv2(nn.Module):
 class ModelManagerNN():
     def __init__(self, instBase_path, num_hid_ftr=2048, fix_base_net=True, num_layer=1, fc_type='linear', force_to_train=False):
         self.modelList = []
-        self.modelListGMM = []
-        self.modelListkNN = []
+        # self.modelListGMM = []
+        # self.modelListkNN = []
         self.modelCategorynameList = []
         self.modelInstancenameList = []
         self.instBase_path = instBase_path
@@ -304,26 +330,26 @@ class ModelManagerNN():
                              (0.5, 0.5, 0.5))
     ])
 
-    tr_transforms_GMM = transforms.Compose([
-        transforms.Scale(24),
-        transforms.RandomCrop(16),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5),
-                             (0.5, 0.5, 0.5))
-    ])
-    ts_transforms_GMM = transforms.Compose([
-        transforms.Scale(24),
-        transforms.RandomCrop(16),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5),
-                             (0.5, 0.5, 0.5))
-    ])
+    # tr_transforms_GMM = transforms.Compose([
+    #     transforms.Scale(24),
+    #     transforms.RandomCrop(16),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.5, 0.5, 0.5),
+    #                          (0.5, 0.5, 0.5))
+    # ])
+    # ts_transforms_GMM = transforms.Compose([
+    #     transforms.Scale(24),
+    #     transforms.RandomCrop(16),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.5, 0.5, 0.5),
+    #                          (0.5, 0.5, 0.5))
+    # ])
 
 
     def reload_DB(self):
         self.modelList = []
-        self.modelListGMM = []
-        self.modelListkNN = []
+        # self.modelListGMM = []
+        # self.modelListkNN = []
         self.modelCategorynameList = []
         self.modelInstancenameList = []
 
@@ -334,6 +360,10 @@ class ModelManagerNN():
         # 1. try to load a model
         # 2. if they are same, then no further train
         # 3. if they are not same, then re-train again
+        if not os.path.exists(path):
+            print('object instance path {} does not exists. generate it!'.format(path))
+            os.makedirs(path)
+
         listCategory = os.listdir(path)
         for iC, objCate in enumerate(listCategory):        # object category
             listInst = [item for item in os.listdir(os.path.join(path, objCate)) if os.path.isdir(os.path.join(path, objCate, item))]
@@ -346,13 +376,13 @@ class ModelManagerNN():
                                num_layer=self.num_layer,
                                fc_type=self.fc_type)  # construct classifier
 
-            gmmC = GMMClassifier(objCate,
-                                 num_cluster=1,
-                                 num_class=nb_classes)
-
-
-            # knnC = kNNClassifier(objCate,
+            # gmmC = GMMClassifier(objCate,
+            #                      num_cluster=1,
             #                      num_class=nb_classes)
+            #
+            #
+            # # knnC = kNNClassifier(objCate,
+            # #                      num_class=nb_classes)
 
 
 
@@ -360,17 +390,19 @@ class ModelManagerNN():
             pth_path = os.path.join(path, objCate, 'model_frz%d_layer%d_nhid%d_fc%s_class%d.pt' % (self.fix_base_net, self.num_layer, self.num_hid_ftr, self.fc_type, nb_classes))
 
             if self.force_to_train:
-                suc = [False, False, False]
+                # suc = [False, False, False]
+                suc = [False]
             else:
                 suc1 = nnC.load(pth_path, nb_classes)        # fail when no file or numInstance in not same
-                suc2 = gmmC.load(os.path.join(path, objCate, 'gmmC.pkl'))
+                # suc2 = gmmC.load(os.path.join(path, objCate, 'gmmC.pkl'))
                 # suc3 = knnC.load(os.path.join(path, objCate, 'knnC.pkl'))
                 # suc = [suc1, suc2, suc3]
-                suc = [suc1, suc2]
+                # suc = [suc1, suc2]
+                suc = [suc1]
 
             # TODO: check transform is right?
             dataset = dset.ImageFolder(root=os.path.join(path, objCate), transform=self.tr_transforms)
-            dataset_GMM = dset.ImageFolder(root=os.path.join(path, objCate), transform=self.tr_transforms_GMM)
+            # dataset_GMM = dset.ImageFolder(root=os.path.join(path, objCate), transform=self.tr_transforms_GMM)
 
             if all(suc) == False:
                 print('Fail to read the model file. Train the network')
@@ -383,9 +415,9 @@ class ModelManagerNN():
                 if not suc[0]:
                     nnC.train(dataset, learning_rate=self.lr, stop_acc=0.90)             # train classifier
                     nnC.save(pth_path) # save the model
-                if not suc[1]:
-                    gmmC.train(dataset_GMM)  # train classifier
-                    gmmC.save(pth_path)  # save the model
+                # if not suc[1]:
+                #     gmmC.train(dataset_GMM)  # train classifier
+                #     gmmC.save(pth_path)  # save the model
                 # if not suc[2]:
                 #     knnC.train(dataset)  # train classifier
                 #     knnC.save(pth_path)  # save the model
@@ -396,7 +428,7 @@ class ModelManagerNN():
                 print('\tinstances (%d): ' % nb_classes, listInst)
 
             self.modelList.append(nnC)      # add NNs to the list
-            self.modelListGMM.append(gmmC)  # add NNs to the list
+            # self.modelListGMM.append(gmmC)  # add NNs to the list
             # self.modelListkNN.append(knnC)  # add NNs to the list
             self.modelCategorynameList.append(objCate)
             self.modelInstancenameList.append(dataset.class_to_idx)
@@ -426,15 +458,15 @@ class ModelManagerNN():
                 image_crop_resized_tensor.unsqueeze_(0)
                 image_crop_resized_tensor = image_crop_resized_tensor.cuda()
 
-                image_crop_resized_tensor_GMM = self.ts_transforms_GMM(image_crop_resized_pil)
-                image_crop_resized_tensor_GMM.unsqueeze_(0)
-                image_crop_resized_tensor_GMM = image_crop_resized_tensor_GMM.cuda()
+                # image_crop_resized_tensor_GMM = self.ts_transforms_GMM(image_crop_resized_pil)
+                # image_crop_resized_tensor_GMM.unsqueeze_(0)
+                # image_crop_resized_tensor_GMM = image_crop_resized_tensor_GMM.cuda()
 
                 # 2. pass it to the classifier
                 i_clf = self.modelCategorynameList.index(c_name)
 
                 inst_idx_NN, inst_prob_NN = self.modelList[i_clf].inference(image_crop_resized_tensor)
-                inst_idx_GMM, inst_prob_GMM = self.modelListGMM[i_clf].inference(image_crop_resized_tensor_GMM)
+                # inst_idx_GMM, inst_prob_GMM = self.modelListGMM[i_clf].inference(image_crop_resized_tensor_GMM)
 
                 # yochin debug
                 inst_idx = inst_idx_NN

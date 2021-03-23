@@ -30,7 +30,7 @@ def list_files(path, ext):
 if __name__ == '__main__':
     # cap = cv2.VideoCapture(0)
     # cap = cv2.VideoCapture('images/image.jpg')
-    cap = cv2.VideoCapture('images/input_5/input_%05d.png')
+    cap = cv2.VideoCapture('test_input_images/input_3/input_%05d.png')
 
     NUM_REG_IMAGES = 50
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     SAVE_IMAGES = False		# input and out images will be save in the 'path_to_save_images' folder
 
-    path_to_save_images = 'save'
+    path_to_save_images = 'test_output_images'
 
     if not os.path.exists(path_to_save_images):
         os.makedirs(path_to_save_images)
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     # load the detector ans classifier
     # oid = OID('models')     # everything is under this path
-    oid = OIDv2('models')     # everything is under this path
+    oid = OIDv2('models', use_COCO_detector=False, use_AIR15_detector=True)     # everything is under this path
 
     count = 0
     while True:
