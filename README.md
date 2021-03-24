@@ -17,11 +17,11 @@ Follow the environment in [faster-rcnn.pytorch](https://github.com/jwyang/faster
 
 2. Clone [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch) and install on faster-rcnn.pytorch folder.
     ```bash
-    git clone https://github.com/jwyang/faster-rcnn.pytorch.git
+    git clone https://github.com/jwyang/faster-rcnn.pytorch/tree/pytorch-1.0
     cd faster-rcnn.pytorch && mkdir data
     pip install -r requirements.txt
     cd lib
-    sh make.sh 
+    python setup.py build develop
     ```
 
 3. Make model folder and copy faster-rcnn.pytorch/cfgs folder to models/
