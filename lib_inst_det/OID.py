@@ -143,18 +143,17 @@ class OID(nn.Module):
 
 
 class OIDv2(nn.Module):
-    def __init__(self, baseFolder='models', use_COCO_detector=False, use_AIR15_detector=True, use_comment_generator=False):
+    def __init__(self, baseFolder='models'):
         self.path_to_InstModel = os.path.join(baseFolder, 'InstModel')
 
-        self.use_AIR15_detector = use_AIR15_detector
-        self.use_COCO_detector = use_COCO_detector
-        self.use_comment_generator = use_comment_generator
+        self.use_AIR15_detector = True
+        self.use_COCO_detector = False
 
         self.map_classname_to_korean = {}
 
-        if self.use_comment_generator:
-            self.use_COCO_detector = True
-            print('self.use_COCO_detector is turned on for comment_generator!')
+        # if self.use_comment_generator:
+        #     self.use_COCO_detector = True
+        #     print('self.use_COCO_detector is turned on for comment_generator!')
 
         if self.use_COCO_detector:
             self.detectorCOCO5 = Detector(baseFolder)           # load models and settings
@@ -296,10 +295,10 @@ class OIDv2(nn.Module):
 
         return image
 
-    def generate_comment(self, image, person_bbox, context):
+    def generate_comment(self, person_bbox, list_objs_bbox_score_class, context):
         # person_bbox: [x1, y1, x2, y2]
+        # list list_objs_bbox_score_class: each item has [x1, y1, x2, y2, score, classname]
         # context: 0 : undefined,1 : in the morning, 2 : in the noon,3 : in the night, 4 : when go out (외출할 때), 5 : when come in (외출후 들어올 때), 9: first seeing (처음 본 사람)
-        # int gender: 0: undefined, 1: male, 2: female
 
         def calculate_iou(bboxA, bboxB):
             inter_x1 = np.maximum(bboxA[:2], bboxB[:2])
@@ -314,15 +313,23 @@ class OIDv2(nn.Module):
             return iou
 
         # 0. predefined variables
-        list_obj_and_comment = {'cell phone': {4: '핸드폰을 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.',
-                                               5: '핸드폰을 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.'},
-                                'tie': {4: '중요한 자리에 가시나봐요. 안녕히 다녀오세요.',
-                                        5: '중요한 자리, 잘 다녀오셨나요? 오늘 하루도 고생하셨습니다.'},
-                                'umbrella': {4: '우산을 가져가시네요. 비오는 중에는 앞을 꼭 보며 걸으셔야해요.',
-                                             5: '비오는 중에, 안녕히 다녀오셨나요?'}
-                                }
+        list_obj_and_comment = {}
+        list_obj_and_comment.update({'mobile_phone': dict.fromkeys([4, 5], '핸드폰을 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.')})
+        list_obj_and_comment.update({'key': dict.fromkeys([4, 5], '열쇠를 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.')})
+                                # ,
+                                # # 'tie': {4: '중요한 자리에 가시나봐요. 안녕히 다녀오세요.',
+                                # #         5: '중요한 자리, 잘 다녀오셨나요? 오늘 하루도 고생하셨습니다.'},
+                                # # 'umbrella': {4: '우산을 가져가시네요. 비오는 중에는 앞을 꼭 보며 걸으셔야해요.',
+                                # #              5: '비오는 중에, 안녕히 다녀오셨나요?'},
+                                # 'hat': {4: '',
+                                #      5: ''},
+                                # '': {4: '',
+                                #      5: ''},
+                                # '': {4: '',
+                                #      5: ''},
+                                # }
 
-        list_objs_bbox_score_class = self.detect(image)
+
 
         # 1. first check the position and name of object bboxes
         list_candidate_comments = []
@@ -337,8 +344,7 @@ class OIDv2(nn.Module):
             obj_cy = (obj_bbox[1] + obj_bbox[3]) / 2
 
             # check object's center is in person_bbox
-            if obj_cx > person_bbox[0] and obj_cx < person_bbox[2] and obj_cy > person_bbox[1] and obj_cy < person_bbox[
-                3]:
+            if obj_cx > person_bbox[0] and obj_cx < person_bbox[2] and obj_cy > person_bbox[1] and obj_cy < person_bbox[3]:
 
                 # check object is in comment_object_list:
                 try:
