@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     # load the detector ans classifier
     # oid = OID('models')     # everything is under this path
-    oid = OIDv2('models', use_COCO_detector=False, use_AIR15_detector=True, use_comment_generator=True)     # everything is under this path
+    oid = OIDv2('models')     # everything is under this path
 
     count = 0
     while True:
@@ -73,6 +73,12 @@ if __name__ == '__main__':
                 res_det = oid.detect(image_np)
                 det_toc = time.time()
                 print('Detection took %.3fs for %d object proposals' % (det_toc - det_tic, len(res_det)))
+
+                # import pdb
+                # pdb.set_trace()
+                comment = oid.generate_comment([10, 10, 6000, 3000], res_det, 4)
+                if not None:
+                    print(comment)
 
             elif PROC_MODE == PROC_LIST.Reg:
                 res_det, num_saved_images = oid.register(image_np, class_name, inst_name)

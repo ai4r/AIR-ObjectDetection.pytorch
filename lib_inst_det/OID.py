@@ -172,6 +172,23 @@ class OIDv2(nn.Module):
 
         self.classifier = ModelManagerNN(self.path_to_InstModel)
 
+        # 0. predefined variables
+        self.list_obj_and_comment = {}
+        self.list_obj_and_comment.update({'mobile_phone': dict.fromkeys([4, 5], '핸드폰을 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.')})
+        self.list_obj_and_comment.update({'key': dict.fromkeys([4, 5], '열쇠를 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.')})
+        self.list_obj_and_comment.update({'wallet': dict.fromkeys([4, 5], '지갑을 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.')})
+        self.list_obj_and_comment.update({'pack': dict.fromkeys([1, 2, 3, 4, 5], '담배보다 껌이나 사탕은 어떠세요?')})
+        self.list_obj_and_comment.update({'medicine_case': dict.fromkeys([1, 2, 3], '약이 맞는지 확인하고 드세요.')})
+        self.list_obj_and_comment.update({'medicine_packet': dict.fromkeys([1, 2, 3], '약이 맞는지 확인하고 드세요.')})
+        self.list_obj_and_comment.update({'hat': dict.fromkeys([4, 5], '모자가 잘 어울리세요.')})
+
+    #         self.list_obj_and_comment.update({'tie': {4: '중요한 자리에 가시나봐요. 안녕히 다녀오세요.',
+    #                                              5: '중요한 자리, 잘 다녀오셨나요? 오늘 하루도 고생하셨습니다.'}
+    #                                     })
+    #         self.list_obj_and_comment.update({'umbrella': {4: '우산을 가져가시네요. 비오는 중에는 앞을 꼭 보며 걸으셔야해요.',
+    #                                                   5: '비오는 중에, 안녕히 다녀오셨나요?'}
+    #                                     })
+
     def detect(self, image):
         if self.use_COCO_detector:
             ret_bbox_score_class_COCO5 = self.detectorCOCO5.detect(image)
@@ -312,30 +329,17 @@ class OIDv2(nn.Module):
 
             return iou
 
-        # 0. predefined variables
-        list_obj_and_comment = {}
-        list_obj_and_comment.update({'mobile_phone': dict.fromkeys([4, 5], '핸드폰을 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.')})
-        list_obj_and_comment.update({'key': dict.fromkeys([4, 5], '열쇠를 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.')})
-        list_obj_and_comment.update({'wallet': dict.fromkeys([4, 5], '지갑을 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.')})
-        list_obj_and_comment.update({'pack': dict.fromkeys([1, 2, 3, 4, 5], '담배보다 껌이나 사탕은 어떠세요?')})
-        list_obj_and_comment.update({'medicine_case': dict.fromkeys([1, 2, 3], '약이 맞는지 확인하고 드세요.')})
-        list_obj_and_comment.update({'medicine_packet': dict.fromkeys([1, 2, 3], '약이 맞는지 확인하고 드세요.')})
-        list_obj_and_comment.update({'hat': dict.fromkeys([4, 5], '모자가 잘 어울리세요.')})
-#         list_obj_and_comment.update({'tie': {4: '중요한 자리에 가시나봐요. 안녕히 다녀오세요.',
-#                                              5: '중요한 자리, 잘 다녀오셨나요? 오늘 하루도 고생하셨습니다.'}
-#                                     })
-#         list_obj_and_comment.update({'umbrella': {4: '우산을 가져가시네요. 비오는 중에는 앞을 꼭 보며 걸으셔야해요.',
-#                                                   5: '비오는 중에, 안녕히 다녀오셨나요?'}
-#                                     })
-        
         # 1. first check the position and name of object bboxes
+        # import pdb
+        # pdb.set_trace()
+
         list_candidate_comments = []
         for iobj, obj_bbox_score_class in enumerate(list_objs_bbox_score_class):
             # item has 4 elements: bbox(4)_score(1)_class(str)
             # item has 6 elements: bbox(4)_score(1)_class(str)_score(1)_instance(str)
-            obj_bbox = obj_bbox_score_class[:4]
-            # obj_score = obj_bbox_score_class[4]
-            obj_class = obj_bbox_score_class[5]
+            obj_bbox = obj_bbox_score_class[0]
+            # obj_score = obj_bbox_score_class[1]
+            obj_class = obj_bbox_score_class[2]
 
             obj_cx = (obj_bbox[0] + obj_bbox[2]) / 2
             obj_cy = (obj_bbox[1] + obj_bbox[3]) / 2
@@ -345,7 +349,7 @@ class OIDv2(nn.Module):
 
                 # check object is in comment_object_list:
                 try:
-                    list_candidate_comments.append(list_obj_and_comment[obj_class][context])
+                    list_candidate_comments.append(self.list_obj_and_comment[obj_class][context])
                 except:
                     pass
 
