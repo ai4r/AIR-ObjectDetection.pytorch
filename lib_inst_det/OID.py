@@ -315,22 +315,19 @@ class OIDv2(nn.Module):
         # 0. predefined variables
         list_obj_and_comment = {}
         list_obj_and_comment.update({'mobile_phone': dict.fromkeys([4, 5], '핸드폰을 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.')})
-        list_obj_and_comment.update({'key': dict.fromkeys([4, 5], '열쇠를 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.')})
-                                # ,
-                                # # 'tie': {4: '중요한 자리에 가시나봐요. 안녕히 다녀오세요.',
-                                # #         5: '중요한 자리, 잘 다녀오셨나요? 오늘 하루도 고생하셨습니다.'},
-                                # # 'umbrella': {4: '우산을 가져가시네요. 비오는 중에는 앞을 꼭 보며 걸으셔야해요.',
-                                # #              5: '비오는 중에, 안녕히 다녀오셨나요?'},
-                                # 'hat': {4: '',
-                                #      5: ''},
-                                # '': {4: '',
-                                #      5: ''},
-                                # '': {4: '',
-                                #      5: ''},
-                                # }
-
-
-
+        list_obj_and_comment.update({'key': dict.fromkeys([4, 5], '열쇠를 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.')})
+        list_obj_and_comment.update({'wallet': dict.fromkeys([4, 5], '지갑을 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.')})
+        list_obj_and_comment.update({'pack': dict.fromkeys([1, 2, 3, 4, 5], '담배보다 껌이나 사탕은 어떠세요?')})
+        list_obj_and_comment.update({'medicine_case': dict.fromkeys([1, 2, 3], '약이 맞는지 확인하고 드세요.')})
+        list_obj_and_comment.update({'medicine_packet': dict.fromkeys([1, 2, 3], '약이 맞는지 확인하고 드세요.')})
+        list_obj_and_comment.update({'hat': dict.fromkeys([4, 5], '모자가 잘 어울리세요.')})
+#         list_obj_and_comment.update({'tie': {4: '중요한 자리에 가시나봐요. 안녕히 다녀오세요.',
+#                                              5: '중요한 자리, 잘 다녀오셨나요? 오늘 하루도 고생하셨습니다.'}
+#                                     })
+#         list_obj_and_comment.update({'umbrella': {4: '우산을 가져가시네요. 비오는 중에는 앞을 꼭 보며 걸으셔야해요.',
+#                                                   5: '비오는 중에, 안녕히 다녀오셨나요?'}
+#                                     })
+        
         # 1. first check the position and name of object bboxes
         list_candidate_comments = []
         for iobj, obj_bbox_score_class in enumerate(list_objs_bbox_score_class):
