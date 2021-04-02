@@ -30,7 +30,8 @@ def list_files(path, ext):
 if __name__ == '__main__':
     # cap = cv2.VideoCapture(0)
     # cap = cv2.VideoCapture('images/image.jpg')
-    cap = cv2.VideoCapture('test_input_images/input_3/input_%05d.png')
+    # cap = cv2.VideoCapture('test_input_images/input_1/input_%02d.jpg')
+    cap = cv2.VideoCapture('test_input_images/input_5/%05d.jpg')
 
     NUM_REG_IMAGES = 50
 
@@ -39,7 +40,7 @@ if __name__ == '__main__':
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-    SAVE_IMAGES = False		# input and out images will be save in the 'path_to_save_images' folder
+    SAVE_IMAGES = True		# input and out images will be save in the 'path_to_save_images' folder
 
     path_to_save_images = 'test_output_images'
 

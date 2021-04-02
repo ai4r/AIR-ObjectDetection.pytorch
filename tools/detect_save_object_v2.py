@@ -5,6 +5,7 @@ import cv2
 import shutil
 
 from lib_inst_det.detector import Detector
+from lib_inst_det.detectorAIR15 import DetectorAIR15
 from lib_inst_det.OID import OID
 sys.path.append('lib_inst_det')
 
@@ -23,6 +24,7 @@ def list_dirs(path):
             filelist.append(name)
     return filelist
 
+# _v2: 
 
 # Demo code for detect and save object images from videos
 # make same folder structure
@@ -40,9 +42,9 @@ if __name__ == '__main__':
     do_structured_output = True
 
     # load the detector ans classifier
-    detector = Detector('models', threshold=0.5)   # everything is under this path
+    detector = DetectorAIR15('../models', threshold=0.5)   # everything is under this path
 
-    fid = open('../missing_file.txt', 'w')
+    fid = open('../AIR_5yr/cropped/missing_file.txt', 'w')
 
     for object_name in list_target_object:
         list_instances = list_dirs(os.path.join(from_path, object_name))
