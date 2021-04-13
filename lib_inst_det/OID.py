@@ -13,6 +13,7 @@ from PIL import Image
 import glob
 from PIL import Image, ImageDraw, ImageFont
 import random
+import time
 
 # detector - faster-rcnn.pytorch
 # classifier - prototype + cosine or linear fc
@@ -382,6 +383,16 @@ class ModelManagerNN():
         self.force_to_train = force_to_train
         self.load_DB(self.instBase_path)
 
+        # debug image
+        self.save_debug_image = True
+        self.save_debug_image_path = 'debug_image_folder'
+
+        import pdb
+        pdb.set_trace()
+        if self.save_debug_image:
+            if not os.path.exists(self.save_debug_image_path):
+                os.makedirs(self.save_debug_image_path)
+
     tr_transforms = transforms.Compose([
                             transforms.Scale(256),
                             transforms.RandomCrop(224),
@@ -549,10 +560,19 @@ class ModelManagerNN():
 
                 # print('NN result: %s %f' % (nameSimilarInst, probSimilarInst))
 
+                if self.save_debug_image:
+                    ctime = time.time() * 1000
+                    cv2.imwrite(os.path.join(self.save_debug_image_path, '{}_{}_{}.png'.format(c_name, nameSimilarInst, ctime)), image_crop_resized)
+
             if nameSimilarInst != '':
                 item.extend([probSimilarInst, nameSimilarInst])
 
             ret_bbox_score_inst.append(item)
+
+        if self.save_debug_image:
+            ctime = time.time() * 1000
+            cv2.imwrite(os.path.join(self.save_debug_image_path, 'image_{}.png'.format(ctime)), cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+
 
         return ret_bbox_score_inst
 

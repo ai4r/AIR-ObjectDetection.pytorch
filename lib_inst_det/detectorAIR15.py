@@ -78,6 +78,7 @@ class DetectorAIR15():
         # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_14657.pth')
         # load_name = os.path.join(baseFolder, 'FRCN_ls_anchors4_cocoPret', 'res101', 'faster_rcnn_1_10_9999.pth')  # w/ bottle class
         load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_AIR15.pth') # w/o bottle class
+        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_AIR15_new.pth')  # w/o bottle class
 
 
         self.thresh = threshold
