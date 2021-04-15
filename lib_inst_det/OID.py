@@ -563,7 +563,7 @@ class ModelManagerNN():
 
                 if self.save_debug_image_cropped:
                     ctime = time.time() * 1000
-                    cv2.imwrite(os.path.join(self.save_debug_image_path, nameSimilarInst, '{}_{:.4f}_{}.png'.format(nameSimilarInst, probSimilarInst.item(), ctime)), cv2.cvtColor(image_crop_resized, cv2.COLOR_BGR2RGB))
+                    cv2.imwrite(os.path.join(self.save_debug_image_path, nameSimilarInst, '{}_{:.4f}_{}.png'.format(nameSimilarInst, probSimilarInst.item(), ctime)), cv2.cvtColor(image_crop_resized, cv2.COLOR_RGB2BGR))
 
             if nameSimilarInst != '':
                 item.extend([probSimilarInst, nameSimilarInst])
@@ -572,7 +572,7 @@ class ModelManagerNN():
 
         if self.save_debug_image_whole:
             ctime = time.time() * 1000
-            cv2.imwrite(os.path.join(self.save_debug_image_path, 'image_{}.png'.format(ctime)), image)
+            cv2.imwrite(os.path.join(self.save_debug_image_path, 'image_{}.png'.format(ctime)), image)  # BGR
 
 
         return ret_bbox_score_inst
