@@ -372,6 +372,11 @@ class ModelManagerNN():
         self.modelInstancenameList = []
         self.instBase_path = instBase_path
 
+        # debug image
+        self.save_debug_image_cropped = True
+        self.save_debug_image_whole = False
+        self.save_debug_image_path = '/home/yochin/Desktop/AIR-ObjectDetection.pytorch/debug_image_folder'
+
         # NN options
         self.num_hid_ftr = num_hid_ftr
         self.fix_base_net = fix_base_net
@@ -383,15 +388,6 @@ class ModelManagerNN():
         self.force_to_train = force_to_train
         self.load_DB(self.instBase_path)
 
-        # debug image
-        self.save_debug_image = True
-        self.save_debug_image_path = 'debug_image_folder'
-
-        import pdb
-        pdb.set_trace()
-        if self.save_debug_image:
-            if not os.path.exists(self.save_debug_image_path):
-                os.makedirs(self.save_debug_image_path)
 
     tr_transforms = transforms.Compose([
                             transforms.Scale(256),
@@ -515,6 +511,11 @@ class ModelManagerNN():
             self.modelInstancenameList.append(dataset.class_to_idx)
             print('\tclass_to_index:', dataset.class_to_idx)
 
+            if self.save_debug_image_cropped or self.save_debug_image_whole:
+                for item in listInst:
+                    if not os.path.exists(os.path.join(self.save_debug_image_path, item)):
+                        os.makedirs(os.path.join(self.save_debug_image_path, item))
+
 
     def classify(self, image, bbox_score_class):
         ret_bbox_score_inst = []
@@ -560,18 +561,18 @@ class ModelManagerNN():
 
                 # print('NN result: %s %f' % (nameSimilarInst, probSimilarInst))
 
-                if self.save_debug_image:
+                if self.save_debug_image_cropped:
                     ctime = time.time() * 1000
-                    cv2.imwrite(os.path.join(self.save_debug_image_path, '{}_{}_{}.png'.format(c_name, nameSimilarInst, ctime)), image_crop_resized)
+                    cv2.imwrite(os.path.join(self.save_debug_image_path, nameSimilarInst, '{}_{:.4f}_{}.png'.format(nameSimilarInst, probSimilarInst.item(), ctime)), cv2.cvtColor(image_crop_resized, cv2.COLOR_BGR2RGB))
 
             if nameSimilarInst != '':
                 item.extend([probSimilarInst, nameSimilarInst])
 
             ret_bbox_score_inst.append(item)
 
-        if self.save_debug_image:
+        if self.save_debug_image_whole:
             ctime = time.time() * 1000
-            cv2.imwrite(os.path.join(self.save_debug_image_path, 'image_{}.png'.format(ctime)), cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            cv2.imwrite(os.path.join(self.save_debug_image_path, 'image_{}.png'.format(ctime)), image)
 
 
         return ret_bbox_score_inst
