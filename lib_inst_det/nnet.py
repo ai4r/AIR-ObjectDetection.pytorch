@@ -101,7 +101,8 @@ class NNClassifier():
         # self.num_hid_ftr = num_hid_ftr
         # self.base_net = base_net
         self.NNet = NNet(num_class, num_hid_ftr, base_net, fix_base_net=fix_base_net, num_layer=num_layer, fc_type=fc_type).to(self.device)
-        self.NNet.cuda()
+        if torch.cuda.is_available():
+            self.NNet.cuda()
 
     # save the classifier to disk
     def save(self, path_to_model):
@@ -120,7 +121,11 @@ class NNClassifier():
 
         if os.path.exists(path_to_model):
             print('load model: ', path_to_model)
-            model = torch.load(path_to_model)
+
+            if torch.cuda.is_available():
+                model = torch.load(path_to_model)
+            else:
+                model = torch.load(path_to_model, map_location='cpu')
 
             self.nameCategory = model['nameCategory']
             # self.num_class = model['num_class']

@@ -25,12 +25,14 @@ import pdb
 import numpy as np
 import argparse
 import pprint
+from PIL import Image, ImageDraw, ImageFont
 
 # every complex things are in this class
 # user needs just to call the APIs.
 # detector - faster-rcnn.pytorch
 class DetectorAIR15():
-    def __init__(self, baseFolder='models', threshold=0.9, att_type=None):
+    def __init__(self, baseFolder='models', filename='faster_rcnn_1_10_9999_mosaicCL3to5_CBAM_Gblur.pth',
+                 threshold=0.9, att_type='CBAM'): # att_type=None
         super(DetectorAIR15, self).__init__()
 
         self.cfg = __import__('model').utils.config.cfg
@@ -73,22 +75,7 @@ class DetectorAIR15():
             '--cuda',
         ]
 
-        # load_name = 'output/MSCOCO/res101/faster_rcnn_1_10_14657.pth'
-        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_14657.pth')
-        # load_name = os.path.join(baseFolder, 'FRCN_ls_anchors4_cocoPret', 'res101', 'faster_rcnn_1_10_9999.pth')  # w/ bottle class
-        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_AIR15.pth') # w/o bottle class
-        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_AIR15_new.pth')  # w/o bottle class
-        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_6_9999_mosaic_allowNegV2.pth')  # w/o bottle class
-        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_allowNegV2.pth')  # w/o bottle class
-        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_mosaicCL.pth')  # w/o bottle class
-
-
-        load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_mosaicCL3to5_CBAM_Gblur.pth')  # w/o bottle class
-        att_type = 'CBAM'
-        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_mosaicCL3to5.pth')
-        # att_type = None
-
-
+        load_name = os.path.join(baseFolder, filename) # w/o bottle class
 
         self.thresh = threshold
 
@@ -342,3 +329,64 @@ class DetectorAIR15():
 
     def get_possible_class(self):
         return self.display_classes.keys()
+
+    def visualize(self, image, list_info, box_color=(0, 204, 0), text_color=(255, 255, 255),
+                                   text_bg_color=(0, 204, 0), fontsize=20, thresh=0.8, draw_score=True,
+                                   draw_text_out_of_box=True, map_classname_to_korean=None):
+        """Visual debugging of detections."""
+        print(list_info)
+
+        font = ImageFont.truetype('NanumGothic.ttf', fontsize)
+        image_pil = Image.fromarray(image)
+        image_draw = ImageDraw.Draw(image_pil)
+
+        for item in list_info:
+            # item has 4 elements: bbox(4)_score(1)_class(str)
+            # item has 6 elements: bbox(4)_score(1)_class(str)_score(1)_instance(str)
+            bbox = item[0]
+            score = item[1]
+            class_name = item[2]
+
+            if map_classname_to_korean is not None:
+                # red: big object
+                # green: handheld object w/o owner
+                # blue: handheld object w owner
+                if class_name in ['tv', 'refrigerator', 'couch', 'bed']:
+                    box_color = text_bg_color = (0, 0, 204)
+                else:
+                    box_color = text_bg_color = (0, 204, 0)
+
+                if class_name in map_classname_to_korean.keys():
+                    class_name = map_classname_to_korean[class_name]
+
+            if score > thresh:
+                image_draw.rectangle(bbox, outline=box_color, width=3)
+
+                if len(item) < 4:
+                    if draw_score:
+                        strText = '%s: %.3f' % (class_name, score)
+                    else:
+                        strText = class_name
+                else:
+                    box_color = text_bg_color = (204, 0, 0)
+                    score_i = item[3]
+                    inst_name = item[4]
+
+                    if draw_score:
+                        strText = '%s: %.3f (%s: %.3f)' % (class_name, score, inst_name, score_i)
+                    else:
+                        strText = '%s (%s)' % (class_name, inst_name)
+
+                text_w, text_h = font.getsize(strText)
+
+                if draw_text_out_of_box:
+                    image_draw.rectangle((bbox[0], bbox[1] - 20, bbox[0] + text_w, bbox[1] - 20 + text_h),
+                                      fill=text_bg_color)
+                    image_draw.text((bbox[0], bbox[1] - 20), strText, font=font, fill=text_color)
+                else:
+                    image_draw.rectangle((bbox[0], bbox[1], bbox[0] + text_w, bbox[1] + text_h), fill=text_bg_color)
+                    image_draw.text((bbox[0], bbox[1]), strText, font=font, fill=text_color)
+
+        image = np.array(image_pil)
+
+        return image

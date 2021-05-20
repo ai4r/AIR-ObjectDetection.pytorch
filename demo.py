@@ -11,7 +11,7 @@ from enum import Enum
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # updated: add detectorAIR15 for 15 handheld objects
 # updated: add save input and output images
@@ -32,10 +32,10 @@ def list_files(path, ext):
 
 # Demo code for object detection and instance classification
 if __name__ == '__main__':
-    # cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     # cap = cv2.VideoCapture('images/image.jpg')
     # cap = cv2.VideoCapture('test_input_images/input_1/input_%02d.jpg')
-    cap = cv2.VideoCapture('test_input_images/input_5/%05d.jpg')
+    # cap = cv2.VideoCapture('test_input_images/input_5/%05d.jpg')
 
     NUM_REG_IMAGES = 50
 
@@ -44,13 +44,12 @@ if __name__ == '__main__':
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-    SAVE_IMAGES = True		# input and out images will be save in the 'path_to_save_images' folder
+    SAVE_IMAGES = False		# input and out images will be save in the 'path_to_save_images' folder
 
     path_to_save_images = 'test_output_images'
 
     if not os.path.exists(path_to_save_images):
         os.makedirs(path_to_save_images)
-
 
     if not cap.isOpened():
         raise RuntimeError("Webcam could not open. Please check connection.")

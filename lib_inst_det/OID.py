@@ -600,8 +600,8 @@ class ModelManagerNN():
 
             if c_name in self.modelCategorynameList:   # classifier
                 # 1. crop bbox_score_class
-                crop_w_half = int((x2 - x1) / 4)  # add 25% to left and 25% to right
-                crop_h_half = int((y2 - y1) / 4)
+                crop_w_half = 0#int((x2 - x1) / 4)  # add 25% to left and 25% to right
+                crop_h_half = 0#int((y2 - y1) / 4)
 
                 crop_x1 = max(x1 - crop_w_half, 0)
                 crop_x2 = min(x2 + crop_w_half, image.shape[1])
@@ -635,13 +635,13 @@ class ModelManagerNN():
                         cv2.imshow('./%s_gradcam_%s.png' % (c_name, c_name), visualization)
 
                         # cut margin and resize
-                        cv2.imshow('./%s_intput_object_%s.png' % (c_name, c_name), image_crop_for_clf)
+                        # cv2.imshow('./%s_intput_object_%s.png' % (c_name, c_name), image_crop_for_clf)
 
                         # pdb.set_trace()
-                        PATCH_MARGIN_SIZE_H = int(gradMap.shape[0] / 6)
-                        PATCH_MARGIN_SIZE_W = int(gradMap.shape[1] / 6)
+                        PATCH_MARGIN_SIZE_H = 0#int(gradMap.shape[0] / 6)
+                        PATCH_MARGIN_SIZE_W = 0#int(gradMap.shape[1] / 6)
 
-                        gradMap = gradMap[PATCH_MARGIN_SIZE_H:-PATCH_MARGIN_SIZE_H, PATCH_MARGIN_SIZE_W:-PATCH_MARGIN_SIZE_W]
+                        # gradMap = gradMap[PATCH_MARGIN_SIZE_H:-PATCH_MARGIN_SIZE_H, PATCH_MARGIN_SIZE_W:-PATCH_MARGIN_SIZE_W]
                         gradMap_resized = cv2.resize(gradMap, (x2-x1, y2-y1))
                         image_crop_for_clf = image_crop_for_clf * np.expand_dims(gradMap_resized, axis=2)
                         image_crop_for_clf = image_crop_for_clf.astype(np.uint8)
@@ -650,7 +650,7 @@ class ModelManagerNN():
                         del gradMap, visualization
                         del image_crop_bgr_224, image_crop_bgr_224_tensor, score
 
-                        cv2.waitKey(0)
+                        # cv2.waitKey(0)
 
                         image_crop_resized = cv2.cvtColor(image_crop_for_clf, cv2.COLOR_BGR2RGB)
                         image_crop_resized_pil = Image.fromarray(image_crop_resized)
