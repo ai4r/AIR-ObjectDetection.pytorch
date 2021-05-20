@@ -21,7 +21,6 @@ from model.rpn.bbox_transform import bbox_transform_inv
 from model.utils.net_utils import save_net, load_net, vis_detections
 from model.utils.blob import im_list_to_blob
 from model.faster_rcnn.vgg16 import vgg16
-from model.faster_rcnn.resnet import resnet
 import pdb
 import numpy as np
 import argparse
@@ -31,7 +30,7 @@ import pprint
 # user needs just to call the APIs.
 # detector - faster-rcnn.pytorch
 class DetectorAIR15():
-    def __init__(self, baseFolder='models', threshold=0.9):
+    def __init__(self, baseFolder='models', threshold=0.9, att_type=None):
         super(DetectorAIR15, self).__init__()
 
         self.cfg = __import__('model').utils.config.cfg
@@ -77,8 +76,18 @@ class DetectorAIR15():
         # load_name = 'output/MSCOCO/res101/faster_rcnn_1_10_14657.pth'
         # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_14657.pth')
         # load_name = os.path.join(baseFolder, 'FRCN_ls_anchors4_cocoPret', 'res101', 'faster_rcnn_1_10_9999.pth')  # w/ bottle class
-        load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_AIR15.pth') # w/o bottle class
+        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_AIR15.pth') # w/o bottle class
         # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_AIR15_new.pth')  # w/o bottle class
+        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_6_9999_mosaic_allowNegV2.pth')  # w/o bottle class
+        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_allowNegV2.pth')  # w/o bottle class
+        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_mosaicCL.pth')  # w/o bottle class
+
+
+        load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_mosaicCL3to5_CBAM_Gblur.pth')  # w/o bottle class
+        att_type = 'CBAM'
+        # load_name = os.path.join(baseFolder, 'faster_rcnn_1_10_9999_mosaicCL3to5.pth')
+        # att_type = None
+
 
 
         self.thresh = threshold
@@ -94,8 +103,6 @@ class DetectorAIR15():
 
         if self.args.cfg_file is not None:
             # check cfg file and copy
-
-
             cfg_from_file(self.args.cfg_file)
         if self.args.set_cfgs is not None:
             cfg_from_list(self.args.set_cfgs)
@@ -158,12 +165,15 @@ class DetectorAIR15():
         # initilize the network here.
         if self.args.net == 'vgg16':
             self.fasterRCNN = vgg16(self.classes, pretrained=False, class_agnostic=self.args.class_agnostic)
-        elif self.args.net == 'res101':
-            self.fasterRCNN = resnet(self.classes, 101, pretrained=False, class_agnostic=self.args.class_agnostic)
-        elif self.args.net == 'res50':
-            self.fasterRCNN = resnet(self.classes, 50, pretrained=False, class_agnostic=self.args.class_agnostic)
-        elif self.args.net == 'res152':
-            self.fasterRCNN = resnet(self.classes, 152, pretrained=False, class_agnostic=self.args.class_agnostic)
+        elif 'res' in self.args.net:
+            # from model.faster_rcnn.resnet import resnet
+            from model.faster_rcnn.resnet_AIRvar_CBAM import resnet
+            if self.args.net == 'res101':
+                self.fasterRCNN = resnet(self.classes, 101, pretrained=False, class_agnostic=self.args.class_agnostic, att_type=att_type)
+            elif self.args.net == 'res50':
+                self.fasterRCNN = resnet(self.classes, 50, pretrained=False, class_agnostic=self.args.class_agnostic, att_type=att_type)
+            elif self.args.net == 'res152':
+                self.fasterRCNN = resnet(self.classes, 152, pretrained=False, class_agnostic=self.args.class_agnostic, att_type=att_type)
         else:
             print("network is not defined")
             pdb.set_trace()

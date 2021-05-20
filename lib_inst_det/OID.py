@@ -1,4 +1,6 @@
 import os
+import pdb
+
 import torch
 import torch.nn as nn
 import torchvision.datasets as dset
@@ -14,6 +16,8 @@ import glob
 from PIL import Image, ImageDraw, ImageFont
 import random
 import time
+from lib_inst_det.gradCam import gradCam
+from pytorch_grad_cam.utils.image import show_cam_on_image
 
 # detector - faster-rcnn.pytorch
 # classifier - prototype + cosine or linear fc
@@ -142,7 +146,6 @@ class OID(nn.Module):
 
         return image
 
-
 class OIDv2(nn.Module):
     def __init__(self, baseFolder='models'):
         self.path_to_InstModel = os.path.join(baseFolder, 'InstModel')
@@ -171,7 +174,8 @@ class OIDv2(nn.Module):
         if not self.use_COCO_detector and not self.use_AIR15_detector:
             print('Both detectors are not activated. Please check it.')
 
-        self.classifier = ModelManagerNN(self.path_to_InstModel)
+        # classifier
+        self.classifier = ModelManagerNN(self.path_to_InstModel, detection_model=self.detectorAIR15)    # det_model is used to calcuate att_map
 
         # 0. predefined variables
         self.list_obj_and_comment = {}
@@ -206,8 +210,8 @@ class OIDv2(nn.Module):
 
         ret_bbox_score_class = ret_bbox_score_class_COCO5 + ret_bbox_score_class_AIR15
         # crop, classify, replace, result
-        ret_bbox_score_inst = self.classifier.classify(image, ret_bbox_score_class)
 
+        ret_bbox_score_inst = self.classifier.classify(image, ret_bbox_score_class)
         # ret_bbox_score_inst = ret_bbox_score_class_COCO5 + ret_bbox_score_inst_AIR15
 
         return ret_bbox_score_inst
@@ -364,7 +368,8 @@ class OIDv2(nn.Module):
 
 # Manager between DB <-> object classifier
 class ModelManagerNN():
-    def __init__(self, instBase_path, num_hid_ftr=2048, fix_base_net=True, num_layer=1, fc_type='linear', force_to_train=False):
+    def __init__(self, instBase_path, num_hid_ftr=2048, fix_base_net=True, num_layer=1, fc_type='linear',
+                 force_to_train=False, detection_model=None):
         self.modelList = []
         # self.modelListGMM = []
         # self.modelListkNN = []
@@ -388,6 +393,14 @@ class ModelManagerNN():
         self.force_to_train = force_to_train
         self.load_DB(self.instBase_path)
 
+        if detection_model is not None:
+            print('gradCam is loaded!!!!')
+            self.detection_model_categories = detection_model.classes
+            self.gradCam = gradCam(detection_model)
+        else:
+            self.gradCam = None
+
+        self.do_not_checksum = True
 
     tr_transforms = transforms.Compose([
                             transforms.Scale(256),
@@ -401,6 +414,7 @@ class ModelManagerNN():
     ts_transforms = transforms.Compose([
         transforms.Scale(256),
         transforms.CenterCrop(224),
+
         # transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5),
@@ -460,8 +474,6 @@ class ModelManagerNN():
             #
             # # knnC = kNNClassifier(objCate,
             # #                      num_class=nb_classes)
-
-
 
             # try to load a model
             pth_path = os.path.join(path, objCate, 'model_frz%d_layer%d_nhid%d_fc%s_class%d.pt' % (self.fix_base_net, self.num_layer, self.num_hid_ftr, self.fc_type, nb_classes))
@@ -528,42 +540,149 @@ class ModelManagerNN():
             nameSimilarInst = ''
             probSimilarInst = 0.
 
-            if c_name in self.modelCategorynameList:
+            if False:
                 # 1. crop bbox_score_class
-                image_crop = image[y1:y2, x1:x2, :]
-                # image_crop_resized = cv2.resize(image_crop, (64, 64), None, interpolation=cv2.INTER_LINEAR)
-                # image_crop_resized = resizeImagewithBorderRepeat(image_crop, 64)
-                # cv2.imwrite('./ttt.png', image_crop_resized)
-                image_crop_resized = cv2.cvtColor(image_crop, cv2.COLOR_BGR2RGB)
-                image_crop_resized_pil = Image.fromarray(image_crop_resized)
-                image_crop_resized_tensor = self.ts_transforms(image_crop_resized_pil)
-                image_crop_resized_tensor.unsqueeze_(0)
-                image_crop_resized_tensor = image_crop_resized_tensor.cuda()
+                crop_w_half = int((x2 - x1) / 4)  # add 25% to left and 25% to right
+                crop_h_half = int((y2 - y1) / 4)
 
-                # image_crop_resized_tensor_GMM = self.ts_transforms_GMM(image_crop_resized_pil)
-                # image_crop_resized_tensor_GMM.unsqueeze_(0)
-                # image_crop_resized_tensor_GMM = image_crop_resized_tensor_GMM.cuda()
+                crop_x1 = max(x1 - crop_w_half, 0)
+                crop_x2 = min(x2 + crop_w_half, image.shape[1])
 
-                # 2. pass it to the classifier
-                i_clf = self.modelCategorynameList.index(c_name)
+                crop_y1 = max(y1 - crop_h_half, 0)
+                crop_y2 = min(y2 + crop_h_half, image.shape[1])
 
-                inst_idx_NN, inst_prob_NN = self.modelList[i_clf].inference(image_crop_resized_tensor)
-                # inst_idx_GMM, inst_prob_GMM = self.modelListGMM[i_clf].inference(image_crop_resized_tensor_GMM)
+                image_crop_for_attention = image[crop_y1:crop_y2, crop_x1:crop_x2, :]
+                image_crop_for_clf = image[y1:y2, x1:x2, :]
 
-                # yochin debug
-                inst_idx = inst_idx_NN
-                inst_prob = inst_prob_NN
+                PATCH_SIZE = 224
+                scale_resized = 224.0 / float(min(crop_x2-crop_x1, crop_y2-crop_y1))
 
-                # 3. get the result and append it to the list
-                # nameSimilarInst = self.modelInstancenameList[i_clf][inst_idx]
-                nameSimilarInst = list(self.modelInstancenameList[i_clf].keys())[list(self.modelInstancenameList[i_clf].values()).index(inst_idx)]
-                probSimilarInst = inst_prob
+                PATCH_MARGIN_SIZE = int(PATCH_SIZE / 6)
 
-                # print('NN result: %s %f' % (nameSimilarInst, probSimilarInst))
+                if self.gradCam is not None:
+                    image_crop_bgr_224 = cv2.resize(image_crop_for_attention, dsize=None, fx=scale_resized, fy=scale_resized)
+                    cv2.imshow('./%s_input.png' % c_name, image_crop_bgr_224)
 
-                if self.save_debug_image_cropped:
-                    ctime = time.time() * 1000
-                    cv2.imwrite(os.path.join(self.save_debug_image_path, nameSimilarInst, '{}_{:.4f}_{}.png'.format(nameSimilarInst, probSimilarInst.item(), ctime)), cv2.cvtColor(image_crop_resized, cv2.COLOR_RGB2BGR))
+                    image_crop_bgr_224_tensor = self.gradCam.convert_to_tensor(image_crop_bgr_224)  # bgr -> tensor
+                    score = self.gradCam.get_score(image_crop_bgr_224_tensor)   # tensor -> class
+                    selected_class_by_cam = self.detection_model_categories[score.argmax()]
+                    # print(score)
+                    print('--> selected class is ', selected_class_by_cam, score.max())
+
+                    if selected_class_by_cam == c_name:
+                        id_idx = np.where(self.detection_model_categories == c_name)
+                        gradMap = self.gradCam.get_gradCam(image_crop_bgr_224_tensor, target_id=id_idx[0])  # get gradMap
+                        gradMap = gradMap[0, :]
+                        visualization = show_cam_on_image(image_crop_bgr_224 / 255., gradMap)
+                        cv2.imshow('./%s_gradcam_%s.png' % (c_name, c_name), visualization)
+
+                        # cut margin and resize
+                        cv2.imshow('./%s_intput_object_%s.png' % (c_name, c_name), image_crop_for_clf)
+
+                        # gradMap = gradMap[PATCH_MARGIN_SIZE:-PATCH_MARGIN_SIZE, PATCH_MARGIN_SIZE:-PATCH_MARGIN_SIZE]
+                        # gradMap_resized = cv2.resize(gradMap, (x2-x1, y2-y1))
+                        # image_crop_for_clf = image_crop_for_clf * np.expand_dims(gradMap_resized, axis=2)
+                        # image_crop_for_clf = image_crop_for_clf.astype(np.uint8)
+                        # cv2.imshow('./%s_gradcamed_object_%s.png' % (c_name, c_name), image_crop_for_clf)
+                        #
+                        # del gradMap, visualization
+                        # del image_crop_bgr_224, image_crop_bgr_224_tensor, score
+
+                        cv2.waitKey(0)
+
+                        # image_crop_resized = cv2.cvtColor(image_crop_for_clf, cv2.COLOR_BGR2RGB)
+                        # image_crop_resized_pil = Image.fromarray(image_crop_resized)
+                        # image_crop_resized_tensor = self.ts_transforms(image_crop_resized_pil)
+                        # image_crop_resized_tensor = image_crop_resized_tensor.unsqueeze_(0).cuda()
+                        # # image_crop_resized_tensor = image_crop_resized_tensor.cuda()
+                        #
+                        # del image_crop_resized_tensor
+
+            if c_name in self.modelCategorynameList:   # classifier
+                # 1. crop bbox_score_class
+                crop_w_half = int((x2 - x1) / 4)  # add 25% to left and 25% to right
+                crop_h_half = int((y2 - y1) / 4)
+
+                crop_x1 = max(x1 - crop_w_half, 0)
+                crop_x2 = min(x2 + crop_w_half, image.shape[1])
+
+                crop_y1 = max(y1 - crop_h_half, 0)
+                crop_y2 = min(y2 + crop_h_half, image.shape[1])
+
+                image_crop_for_attention = image[crop_y1:crop_y2, crop_x1:crop_x2, :]
+                image_crop_for_clf = image[y1:y2, x1:x2, :]
+
+                scale_resized = 224.0 / float(min(crop_x2 - crop_x1, crop_y2 - crop_y1))
+
+                # PATCH_SIZE = 224
+
+                if self.gradCam is not None:
+                    # image_crop_bgr_224 = cv2.resize(image_crop_for_attention, dsize=(PATCH_SIZE, PATCH_SIZE))
+                    image_crop_bgr_224 = cv2.resize(image_crop_for_attention, dsize=None, fx=scale_resized, fy=scale_resized)
+                    cv2.imshow('./%s_input.png' % c_name, image_crop_bgr_224)
+
+                    image_crop_bgr_224_tensor = self.gradCam.convert_to_tensor(image_crop_bgr_224)  # bgr -> tensor
+                    score = self.gradCam.get_score(image_crop_bgr_224_tensor)   # tensor -> class
+                    selected_class_by_cam = self.detection_model_categories[score.argmax()]
+                    # print(score)
+                    print('--> selected class is ', selected_class_by_cam, score.max())
+
+                    if selected_class_by_cam == c_name or self.do_not_checksum:
+                        id_idx = np.where(self.detection_model_categories == c_name)
+                        gradMap = self.gradCam.get_gradCam(image_crop_bgr_224_tensor, target_id=id_idx[0])  # get gradMap
+                        gradMap = gradMap[0, :]
+                        visualization = show_cam_on_image(image_crop_bgr_224 / 255., gradMap)
+                        cv2.imshow('./%s_gradcam_%s.png' % (c_name, c_name), visualization)
+
+                        # cut margin and resize
+                        cv2.imshow('./%s_intput_object_%s.png' % (c_name, c_name), image_crop_for_clf)
+
+                        # pdb.set_trace()
+                        PATCH_MARGIN_SIZE_H = int(gradMap.shape[0] / 6)
+                        PATCH_MARGIN_SIZE_W = int(gradMap.shape[1] / 6)
+
+                        gradMap = gradMap[PATCH_MARGIN_SIZE_H:-PATCH_MARGIN_SIZE_H, PATCH_MARGIN_SIZE_W:-PATCH_MARGIN_SIZE_W]
+                        gradMap_resized = cv2.resize(gradMap, (x2-x1, y2-y1))
+                        image_crop_for_clf = image_crop_for_clf * np.expand_dims(gradMap_resized, axis=2)
+                        image_crop_for_clf = image_crop_for_clf.astype(np.uint8)
+                        cv2.imshow('./%s_gradcamed_object_%s.png' % (c_name, c_name), image_crop_for_clf)
+
+                        del gradMap, visualization
+                        del image_crop_bgr_224, image_crop_bgr_224_tensor, score
+
+                        cv2.waitKey(0)
+
+                        image_crop_resized = cv2.cvtColor(image_crop_for_clf, cv2.COLOR_BGR2RGB)
+                        image_crop_resized_pil = Image.fromarray(image_crop_resized)
+                        image_crop_resized_tensor = self.ts_transforms(image_crop_resized_pil)
+                        image_crop_resized_tensor = image_crop_resized_tensor.unsqueeze_(0).cuda()
+                        # image_crop_resized_tensor = image_crop_resized_tensor.cuda()
+
+                        # 2. pass it to the classifier
+                        i_clf = self.modelCategorynameList.index(c_name)
+
+                        inst_idx_NN, inst_prob_NN = self.modelList[i_clf].inference(image_crop_resized_tensor)
+                        # inst_idx_GMM, inst_prob_GMM = self.modelListGMM[i_clf].inference(image_crop_resized_tensor_GMM)
+
+                        # yochin debug
+                        inst_idx = inst_idx_NN
+                        inst_prob = inst_prob_NN
+
+                        # 3. get the result and append it to the list
+                        # nameSimilarInst = self.modelInstancenameList[i_clf][inst_idx]
+                        nameSimilarInst = list(self.modelInstancenameList[i_clf].keys())[list(self.modelInstancenameList[i_clf].values()).index(inst_idx)]
+                        probSimilarInst = inst_prob
+
+                        # print('NN result: %s %f' % (nameSimilarInst, probSimilarInst))
+
+                        if self.save_debug_image_cropped:
+                            ctime = time.time() * 1000
+                            cv2.imwrite(os.path.join(self.save_debug_image_path, nameSimilarInst, '{}_{:.4f}_{}.png'.format(nameSimilarInst, probSimilarInst.item(), ctime)), cv2.cvtColor(image_crop_resized, cv2.COLOR_RGB2BGR))
+
+                        del image_crop_resized_tensor
+                    else:
+                        nameSimilarInst = 'unknown'
+                        probSimilarInst = 0.0
 
             if nameSimilarInst != '':
                 item.extend([probSimilarInst, nameSimilarInst])

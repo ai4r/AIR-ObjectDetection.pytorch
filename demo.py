@@ -9,6 +9,10 @@ import json	# to save detection results in files
 sys.path.append('lib_inst_det')
 from enum import Enum
 
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+
 # updated: add detectorAIR15 for 15 handheld objects
 # updated: add save input and output images
 #     control capture size
@@ -75,8 +79,6 @@ if __name__ == '__main__':
                 det_toc = time.time()
                 print('Detection took %.3fs for %d object proposals' % (det_toc - det_tic, len(res_det)))
 
-                # import pdb
-                # pdb.set_trace()
                 comment = oid.generate_comment([10, 10, 6000, 3000], res_det, 4)
                 if not None:
                     print(comment)
