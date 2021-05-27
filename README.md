@@ -2,10 +2,8 @@
 
 This is an implementation of Personal Belongings Detection and Recognition Module in AIR Project.
 The module has two main parts, object detector and instance classifier.
-The object detector is based on [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch) and the instance classifier consists of one fc layer. 
-
-### Environment
-Follow the environment in [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch).
+The object detector is based on [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch), the attention module came from 
+ [CBAM and BAM](https://github.com/Jongchan/attention-module), and the instance classifier consists of one fc layer. 
 
 ### Installation
 
@@ -13,25 +11,17 @@ Follow the environment in [faster-rcnn.pytorch](https://github.com/jwyang/faster
     ```bash
     git clone https://github.com/ai4r/AIR-ObjectDetection.pytorch
     cd AIR-ObjectDetection.pytorch
-    ```
-
-2. Clone [faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch) and install on faster-rcnn.pytorch folder.
-    ```bash
-    git clone https://github.com/jwyang/faster-rcnn.pytorch/tree/pytorch-1.0
-    cd faster-rcnn.pytorch && mkdir data
     pip install -r requirements.txt
-    cd lib
-    python setup.py build develop
     ```
 
-3. Make model folder and copy faster-rcnn.pytorch/cfgs folder to models/
+2. Make model folder and copy faster-rcnn.pytorch/cfgs folder to models/
     ```bash
     cd ../.. && mkdir models
     mkdir models/InstModel
     cp -r faster-rcnn.pytorch/cfgs models
     ```
 
-4. Download [the model files](https://drive.google.com/drive/folders/1aKOKMjdFcnGWdZo_VywG9pwlRyiUCodc) and move to models folder.
+3. Download [the model files](https://drive.google.com/drive/folders/1aKOKMjdFcnGWdZo_VywG9pwlRyiUCodc) and move to models folder.
    
    
 ### Run
