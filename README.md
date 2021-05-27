@@ -42,5 +42,4 @@ The object detector is based on [faster-rcnn.pytorch](https://github.com/jwyang/
 2. Press key 'd' and see the result.
 
 ### License
-
 See LICENSE.md
