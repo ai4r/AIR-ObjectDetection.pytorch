@@ -9,7 +9,8 @@ import random
 
 # from lib_inst_det.detector import Detector
 from lib_inst_det.detectorAIR15 import DetectorAIR15
-from lib_inst_det.OID import OID
+from lib_inst_det.detectorAIR23 import DetectorAIR23
+from lib_inst_det.OID import OIDv2
 sys.path.append('lib_inst_det')
 
 
@@ -94,7 +95,7 @@ if __name__ == '__main__':
     start_frame = fps * (4 * 60 + 20)
     stop_frame = 1000000000000
 
-    plabel_th = 0.9
+    plabel_th = 0.5
 
     # frame rate
     # 30fps
@@ -123,7 +124,10 @@ if __name__ == '__main__':
         os.makedirs(path_to_plabel_debug)
 
     # load the detector ans classifier
-    detector = DetectorAIR15('../models', threshold=0.5)  # everything is under this path
+    # detector = DetectorAIR15('../models', threshold=0.5)  # everything is under this path
+    # detector = DetectorAIR23('../models', threshold=0.5)  # everything is under this path
+    detector = OIDv2('../models', use_detectorAIR23=True)
+
 
     cap = cv2.VideoCapture(from_path_video)
 
@@ -161,7 +165,7 @@ if __name__ == '__main__':
                         list_objs.append([class_name, bbox[0], bbox[1], bbox[2], bbox[3], score])
 
                 if imshow_result:
-                    im2show = OID.visualize(None, im2show, res_det, thresh=plabel_th)
+                    im2show = detector.visualize(im2show, res_det, thresh=plabel_th)
                     cv2.imshow('im2show', im2show)
                     cv2.waitKey(10)
 

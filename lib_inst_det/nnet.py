@@ -22,15 +22,19 @@ class distLinear(nn.Module):
 
 # only contain the networks
 class NNet(nn.Module):
-    def __init__(self, num_class, num_hid_ftr=1024, base_net='ResNet50', fix_base_net=True, num_layer=1, fc_type='linear'):
+    def __init__(self, num_class, num_hid_ftr=1024, base_net='ResNet50', fix_base_net=True, num_layer=1, fc_type='linear', use_all_layers=False):
         super(NNet, self).__init__()
-        self.num_in_ftr = 2048
+        self.use_all_layers = use_all_layers
+
+        if self.use_all_layers:
+            self.num_in_ftr = 3904
+        else:
+            self.num_in_ftr = 2048
         self.num_hid_ftr = num_hid_ftr
         self.num_class = num_class
         self.num_layer = num_layer
 
-        self.sharedNet = backbone.network_dict[base_net]()
-
+        self.sharedNet = backbone.network_dict[base_net](use_all_layers=self.use_all_layers)
 
         if num_layer == 3:
             self.fc1 = nn.Linear(self.num_in_ftr, self.num_hid_ftr, bias=True)
@@ -93,14 +97,14 @@ class NNet(nn.Module):
 
 # contains everything related to training and inference
 class NNClassifier():
-    def __init__(self, nameCategory, num_hid_ftr, num_class, base_net='ResNet50', fix_base_net=False, num_layer=3, fc_type='linear'):
+    def __init__(self, nameCategory, num_hid_ftr, num_class, base_net='ResNet50', fix_base_net=False, num_layer=3, fc_type='linear', use_all_layers=False):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         self.nameCategory = nameCategory.replace(' ', '_')
         # self.num_class = num_class
         # self.num_hid_ftr = num_hid_ftr
         # self.base_net = base_net
-        self.NNet = NNet(num_class, num_hid_ftr, base_net, fix_base_net=fix_base_net, num_layer=num_layer, fc_type=fc_type).to(self.device)
+        self.NNet = NNet(num_class, num_hid_ftr, base_net, fix_base_net=fix_base_net, num_layer=num_layer, fc_type=fc_type, use_all_layers=use_all_layers).to(self.device)
         if torch.cuda.is_available():
             self.NNet.cuda()
 
