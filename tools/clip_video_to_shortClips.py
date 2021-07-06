@@ -82,27 +82,48 @@ def save_to_xml(path_xml, image_size, list_objs):
 # Clip video to short videos
 if __name__ == '__main__':
     from_path = '../test_input_images'
-    to_path = '../test_input_images'
+    to_path = '../test_output_images'
+
+    fps = 30
+
+    video_filename = 'Rv_20210621150000-20210621151312_Han.mp4'
+    # seq-1
+    # start_frame = fps * (2 * 60 + 42)
+    # # stop_frame = fps * (4 * 60 + 15)
+    # seq-2
+    # start_frame = fps * (5 * 60 + 10)
+    # # stop_frame = fps * (7 * 60 + 00)
+    # seq-3
+    start_frame = fps * (8 * 60 + 20)
+    stop_frame = fps * (10 * 60 + 10)
+    # seq-4
+    # start_frame = fps * (10 * 60 + 42)
+    # stop_frame = fps * (12 * 60 + 42)
+
+    # video_filename = 'Rv_20210621151426-20210621152229_Han.mp4'
+    # start_frame = 0
+    # stop_frame = 1000000000000000
+
     # video_filename = 'R_2021-04-07-14-00-00_2021-04-07-15-00-00.mp4'
-    video_filename = 'R_20210409111433-20210409113512.mp4'
+    # video_filename = 'R_20210409111433-20210409113512.mp4'
 
     save_image_anno = True      # JPEGImages, Annotations, ImagesSets
     imshow_result = True
 
-    fps = 30
+
     # start_frame = fps * (3 * 60 + 42)
     # stop_frame = fps * (10 * 60 + 30)
-    start_frame = fps * (4 * 60 + 20)
-    stop_frame = 1000000000000
+    # start_frame = fps * (4 * 60 + 20)
+    # stop_frame = 1000000000000
 
-    plabel_th = 0.5
+    plabel_th = 0.7
 
     # frame rate
     # 30fps
     # 1 img/s -> 30
     # 2 img/s -> 15
     # 5 img/s -> 6
-    frame_rate = 15
+    frame_rate = 6
 
     from_path_video = os.path.join(from_path, video_filename)
     video_filename_only = os.path.splitext(video_filename)[0]
@@ -136,6 +157,7 @@ if __name__ == '__main__':
     if not cap.isOpened():
         raise RuntimeError("Video file could not be opened. Please check the file.", from_path_video)
 
+    output_index = 0
     if save_image_anno:
         fid = open(os.path.join(path_to_plabel_imagesets, 'list.txt'), 'w')
     while cap.isOpened():
@@ -165,13 +187,14 @@ if __name__ == '__main__':
                         list_objs.append([class_name, bbox[0], bbox[1], bbox[2], bbox[3], score])
 
                 if imshow_result:
-                    im2show = detector.visualize(im2show, res_det, thresh=plabel_th)
+                    im2show = detector.visualize(im2show, res_det, thresh=plabel_th, fontsize=15)
                     cv2.imshow('im2show', im2show)
                     cv2.waitKey(10)
 
                 if save_image_anno:
                     # save image, anno, filename
-                    plabel_filename = '%05d' % frame_index
+                    plabel_filename = 'output-%05d' % output_index # frame_index
+                    output_index += 1
 
                     path_filename_anno = os.path.join(path_to_plabel_annos, plabel_filename + '.xml')
                     path_filename_img = os.path.join(path_to_plabel_images, plabel_filename + '.png')

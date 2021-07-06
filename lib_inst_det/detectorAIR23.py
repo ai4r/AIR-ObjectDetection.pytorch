@@ -20,7 +20,6 @@ from torchvision.ops import nms
 from model.rpn.bbox_transform import bbox_transform_inv
 from model.utils.net_utils import save_net, load_net, vis_detections
 from model.utils.blob import im_list_to_blob
-from model.faster_rcnn.vgg16 import vgg16
 import pdb
 import numpy as np
 import argparse
@@ -66,6 +65,7 @@ class DetectorAIR23():
             parser.add_argument('--ls', dest='large_scale',
                                 help='whether use large imag scale',
                                 action='store_true')
+            parser.add_argument('--use_FPN', dest='use_FPN', action='store_true')
 
             return parser
 
@@ -73,6 +73,7 @@ class DetectorAIR23():
             '--net', 'res101',
             '--ls',
             '--cuda',
+            '--use_FPN',
         ]
 
         load_name = os.path.join(baseFolder, filename) # w/o bottle class
@@ -164,10 +165,14 @@ class DetectorAIR23():
 
         # initilize the network here.
         if self.args.net == 'vgg16':
+            from model.faster_rcnn.vgg16 import vgg16
             self.fasterRCNN = vgg16(self.classes, pretrained=False, class_agnostic=self.args.class_agnostic)
         elif 'res' in self.args.net:
             # from model.faster_rcnn.resnet import resnet
-            from model.faster_rcnn.resnet_AIRvar_CBAM import resnet
+            if self.args.use_FPN:
+                from model.fpn.resnet_AIRvar_CBAM import resnet
+            else:
+                from model.faster_rcnn.resnet_AIRvar_CBAM import resnet
             if self.args.net == 'res101':
                 self.fasterRCNN = resnet(self.classes, 101, pretrained=False, class_agnostic=self.args.class_agnostic, att_type=att_type)
             elif self.args.net == 'res50':
@@ -351,7 +356,7 @@ class DetectorAIR23():
                                    text_bg_color=(0, 204, 0), fontsize=20, thresh=0.8, draw_score=True,
                                    draw_text_out_of_box=True, map_classname_to_korean=None):
         """Visual debugging of detections."""
-        print(list_info)
+        # print(list_info)
 
         font = ImageFont.truetype('NanumGothic.ttf', fontsize)
         image_pil = Image.fromarray(image)

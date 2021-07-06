@@ -12,8 +12,8 @@ from torch.autograd import Variable
 import math
 import torch.utils.model_zoo as model_zoo
 import pdb
-from .bam import *
-from .cbam import *
+from model.attention.bam import *
+from model.attention.cbam import *
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
        'resnet152']

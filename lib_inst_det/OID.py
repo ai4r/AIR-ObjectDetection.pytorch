@@ -169,9 +169,9 @@ class OIDv2(nn.Module):
 
         if self.use_AIR_detector:
             if self.use_detectorAIR23:
-                self.detectorAIR = DetectorAIR23(baseFolder)  # load models and settings
+                self.detectorAIR = DetectorAIR23(baseFolder, threshold=0.7, filename='faster_rcnn_1_10_9999_mosaicCL3to5_CBAM_Gblur_class23_wOrgCW_FPN.pth')  # load models and settings
             else:
-                self.detectorAIR = DetectorAIR15(baseFolder)  # load models and settings
+                self.detectorAIR = DetectorAIR15(baseFolder, threshold=0.7)  # load models and settings
 
             self.map_classname_to_korean.update(**self.detectorAIR.display_classes)
         else:
@@ -264,9 +264,9 @@ class OIDv2(nn.Module):
 
     def visualize(self, image, list_info, box_color=(0, 204, 0), text_color=(255, 255, 255),
                                    text_bg_color=(0, 204, 0), fontsize=20, thresh=0.8, draw_score=True,
-                                   draw_text_out_of_box=True, map_classname_to_korean=None):
+                                   draw_text_out_of_box=True, map_classname_to_korean=None, ignore_others=True):
         """Visual debugging of detections."""
-        print(list_info)
+        # print(list_info)
 
         font = ImageFont.truetype('NanumGothic.ttf', fontsize)
         image_pil = Image.fromarray(image)
@@ -279,24 +279,22 @@ class OIDv2(nn.Module):
             score = item[1]
             class_name = item[2]
 
+            if ignore_others and len(item) > 4:
+                if item[4] == 'others':
+                    score = score * 0.0
+
             if map_classname_to_korean is not None:
                 # red: big object
                 # green: handheld object w/o owner
                 # blue: handheld object w owner
-                if class_name in ['tv', 'refrigerator', 'couch', 'bed']:
-                    box_color = text_bg_color = (0, 0, 204)
-                else:
-                    box_color = text_bg_color = (0, 204, 0)
-
                 if class_name in map_classname_to_korean.keys():
                     class_name = map_classname_to_korean[class_name]
 
             if score > thresh:
-                image_draw.rectangle(bbox, outline=box_color, width=3)
-
                 if len(item) < 4:
+                    box_color = text_bg_color = (0, 204, 0)
                     if draw_score:
-                        strText = '%s: %.3f' % (class_name, score)
+                        strText = '%s: %.1f' % (class_name, score)
                     else:
                         strText = class_name
                 else:
@@ -305,10 +303,11 @@ class OIDv2(nn.Module):
                     inst_name = item[4]
 
                     if draw_score:
-                        strText = '%s: %.3f (%s: %.3f)' % (class_name, score, inst_name, score_i)
+                        strText = '%s-%s: %.1f (%.1f)' % (class_name, inst_name, score, score_i)
                     else:
-                        strText = '%s (%s)' % (class_name, inst_name)
+                        strText = '%s-%s' % (class_name, inst_name)
 
+                image_draw.rectangle(bbox, outline=box_color, width=3)
                 text_w, text_h = font.getsize(strText)
 
                 if draw_text_out_of_box:
