@@ -7,6 +7,9 @@ import xml.etree.ElementTree as ET
 import math
 import random
 
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+
 # from lib_inst_det.detector import Detector
 from lib_inst_det.detectorAIR15 import DetectorAIR15
 from lib_inst_det.detectorAIR23 import DetectorAIR23

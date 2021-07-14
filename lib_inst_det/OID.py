@@ -169,7 +169,11 @@ class OIDv2(nn.Module):
 
         if self.use_AIR_detector:
             if self.use_detectorAIR23:
-                self.detectorAIR = DetectorAIR23(baseFolder, threshold=0.7, filename='faster_rcnn_1_10_9999_mosaicCL3to5_CBAM_Gblur_class23_wOrgCW_FPN.pth')  # load models and settings
+                self.detectorAIR = DetectorAIR23(baseFolder,
+                                                 threshold=0.7,
+                                                 filename='faster_rcnn_1_10_9999_syncloud_public23_cloud_testbedv2x6_FPN_CBAM.pth',
+                                                 att_type='CBAM' # att_type=None
+                )  # load models and settings
             else:
                 self.detectorAIR = DetectorAIR15(baseFolder, threshold=0.7)  # load models and settings
 
@@ -185,13 +189,48 @@ class OIDv2(nn.Module):
 
         # 0. predefined variables
         self.list_obj_and_comment = {}
-        self.list_obj_and_comment.update({'mobile_phone': dict.fromkeys([4, 5], '핸드폰을 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.')})
-        self.list_obj_and_comment.update({'key': dict.fromkeys([4, 5], '열쇠를 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.')})
-        self.list_obj_and_comment.update({'wallet': dict.fromkeys([4, 5], '지갑을 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.')})
-        self.list_obj_and_comment.update({'pack': dict.fromkeys([1, 2, 3, 4, 5], '담배보다 껌이나 사탕은 어떠세요?')})
-        self.list_obj_and_comment.update({'medicine_case': dict.fromkeys([1, 2, 3], '약이 맞는지 확인하고 드세요.')})
-        self.list_obj_and_comment.update({'medicine_packet': dict.fromkeys([1, 2, 3], '약이 맞는지 확인하고 드세요.')})
-        self.list_obj_and_comment.update({'hat': dict.fromkeys([4, 5], '모자가 잘 어울리세요.')})
+        self.list_obj_and_comment.update({'mobile_phone': dict.fromkeys([4, 5], [
+            '핸드폰을 들고 다니시면 떨어뜨릴 수 있어요. 주머니에 넣고 다니세요.',
+            '핸드폰에 무슨 문제가 있나요?',
+            '핸드폰이 보입니다.',
+            '과도한 스마트폰 사용은 건강에 나쁘다고 합니다.'
+        ])})
+        self.list_obj_and_comment.update({'key': dict.fromkeys([4, 5], [
+            '열쇠를 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.',
+            '열쇠는 작아서 잃어버리기 쉬워요.',
+            '열쇠가 보입니다.',
+            '요즘은 많은 사람들이 번호키나 카드키를 쓰기에 열쇠를 오랜만에 보네요.'
+        ])})
+        self.list_obj_and_comment.update({'wallet': dict.fromkeys([4, 5], [
+            '지갑을 들고 다니시면 잃어버릴 수 있어요. 주머니에 넣고 다니세요.',
+            '지갑을 오랜만에 보네요.',
+            '지갑이 보이네요.',
+            '요즘은 전자지갑을 많이들 쓰는 것 같아요. 그래서인지 지갑이 반갑네요.'
+        ])})
+        self.list_obj_and_comment.update({'pack': dict.fromkeys([1, 2, 3, 4, 5], [
+            '담배보다 껌이나 사탕은 어떠세요?',
+            '연구 결과에 따르면 금연이 어려운 이유 중 하나는 흡연습관때문이라고 합니다. 오늘부터 습관을 바꾸시는건 어떠신가요?',
+            '저도 담배 한모금 피고싶네요.',
+            '백해무익한 담배지만, 때론 좋은 친구가 되는 것 같아요.'
+        ])})
+        self.list_obj_and_comment.update({'medicine_case': dict.fromkeys([1, 2, 3], [
+            '약이 맞는지 확인하고 드세요.',
+            '약은 제 시간에 먹는게 중요합니다.',
+            '약통이 보이네요.',
+            '일부 약들은 섞어드시면 안되니 주의하세요.'
+        ])})
+        self.list_obj_and_comment.update({'medicine_packet': dict.fromkeys([1, 2, 3], [
+            '약이 맞는지 확인하고 드세요.',
+            '약은 제 시간에 먹는게 중요합니다.',
+            '약봉지가 보이네요.',
+            '일부 약들은 섞어드시면 안되니 주의하세요.'
+        ])})
+        self.list_obj_and_comment.update({'hat': dict.fromkeys([4, 5], [
+            '모자가 잘 어울리세요.',
+            '챙 넓은 모자를 쓰면 자외선으로부터 눈과 피부를 보호할 수 있다고 합니다.',
+            '머리와 얼굴형에 맞는 모자가 있다고 합니다.',
+            '모자가 보이네요.'
+        ])})
 
     #         self.list_obj_and_comment.update({'tie': {4: '중요한 자리에 가시나봐요. 안녕히 다녀오세요.',
     #                                              5: '중요한 자리, 잘 다녀오셨나요? 오늘 하루도 고생하셨습니다.'}
@@ -359,7 +398,7 @@ class OIDv2(nn.Module):
 
                 # check object is in comment_object_list:
                 try:
-                    list_candidate_comments.append(self.list_obj_and_comment[obj_class][context])
+                    list_candidate_comments.extend(self.list_obj_and_comment[obj_class][context])
                 except:
                     pass
 
