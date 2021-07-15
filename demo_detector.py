@@ -79,6 +79,7 @@ if __name__ == '__main__':
                 count = count + 1
         else:
             print('no frame')
+            break
 
         input_key = cv2.waitKey(10)
 
