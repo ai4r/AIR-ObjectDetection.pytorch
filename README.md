@@ -25,6 +25,14 @@ The object detector is based on [faster-rcnn.pytorch](https://github.com/jwyang/
    
    
 ### Run
+#### Object detection only
+
+1. Run the demo code.
+   ```bash
+   python demo_detector.py
+   ```
+2. The program will load images from the test_input_image folder, then save results images to the test_output_image folder.
+
 #### Object instance registration
 
 1. Run the demo code.
