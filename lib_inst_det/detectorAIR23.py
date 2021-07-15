@@ -73,8 +73,10 @@ class DetectorAIR23():
             '--net', 'res101',
             '--ls',
             '--cuda',
-            '--use_FPN',
         ]
+
+        if 'FPN' in filename:
+            cmd_args.append('--use_FPN')
 
         load_name = os.path.join(baseFolder, filename) # w/o bottle class
 

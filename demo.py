@@ -3,15 +3,15 @@ import os, sys
 import numpy as np
 import cv2
 import time
-from lib_inst_det.OID import OID
+# from lib_inst_det.OID import OID
 from lib_inst_det.OID import OIDv2	# include AIR-15 detector and COCO detector
+from lib_inst_det.detectorAIR23 import DetectorAIR23
 import json	# to save detection results in files
 sys.path.append('lib_inst_det')
 from enum import Enum
 
-
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # updated: add detectorAIR15 for 15 handheld objects
 # updated: add save input and output images
@@ -32,19 +32,21 @@ def list_files(path, ext):
 
 # Demo code for object detection and instance classification
 if __name__ == '__main__':
-    cap = cv2.VideoCapture(1)
+    # cap = cv2.VideoCapture(1)
     # cap = cv2.VideoCapture('images/image.jpg')
-    # cap = cv2.VideoCapture('test_input_images/input_1/input_%02d.jpg')
+    cap = cv2.VideoCapture('test_input_images/web_images/%02d.jpeg')
     # cap = cv2.VideoCapture('test_input_images/input_5/%05d.jpg')
 
     NUM_REG_IMAGES = 50
 
     do_flip_input = True	# if you want to apply flipLR to input image
 
+    # resizing resolution
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-    SAVE_IMAGES = False		# input and out images will be save in the 'path_to_save_images' folder
+    SAVE_INPUT_IMAGES = False		# input and out images will be save in the 'path_to_save_images' folder
+    SAVE_OUTPUT_IMAGES = False      # input and out images will be save in the 'path_to_save_images' folder
 
     path_to_save_images = 'test_output_images'
 
@@ -56,7 +58,8 @@ if __name__ == '__main__':
 
     # load the detector ans classifier
     # oid = OID('models')     # everything is under this path
-    oid = OIDv2('models')     # everything is under this path
+    # oid = OIDv2('models')     # everything is under this path
+    oid = DetectorAIR23('models')  # everything is under this path
 
     count = 0
     while True:
@@ -96,8 +99,10 @@ if __name__ == '__main__':
             cv2.imshow('im2show', im2show)
             cv2.waitKey(10)
 
-            if SAVE_IMAGES:
+            if SAVE_INPUT_IMAGES:
                 cv2.imwrite(os.path.join(path_to_save_images, 'input_%05d.png' % count), image_np)
+
+            if SAVE_OUTPUT_IMAGES:
                 cv2.imwrite(os.path.join(path_to_save_images, 'output_%05d.png' % count), im2show)
                 # with open(os.path.join(path_to_save_images, 'result_%5d.json'), 'w') as fp:
                 #     json.dump(res_det, fp)
