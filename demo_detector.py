@@ -24,6 +24,7 @@ if __name__ == '__main__':
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
+    SHOW_OUTPUT_IMAGES = False
     SAVE_INPUT_IMAGES = False		# input images will be stored in the 'path_to_save_images' folder
     SAVE_OUTPUT_IMAGES = True       # out images will be stored in the 'path_to_save_images' folder
 
@@ -65,8 +66,9 @@ if __name__ == '__main__':
 
             im2show = oid.visualize(im2show, res_det, thresh=th_vis, map_classname_to_korean=oid.display_classes)
 
-            cv2.imshow('im2show', im2show)
-            cv2.waitKey(10)
+            if SHOW_OUTPUT_IMAGES:
+                cv2.imshow('im2show', im2show)
+                cv2.waitKey(10)
 
             if SAVE_INPUT_IMAGES:
                 cv2.imwrite(os.path.join(path_to_save_images, 'input_%05d.png' % count), image_np)
