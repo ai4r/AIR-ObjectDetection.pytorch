@@ -18,8 +18,17 @@ The object detector is based on [faster-rcnn.pytorch](https://github.com/jwyang/
     ```bash
     mkdir models/InstModel
     ```
+    
+3. download and install the font file
+    ```bash
+    wget http://cdn.naver.com/naver/NanumFont/fontfiles/NanumFont_TTF_ALL.zip
+    unzip NanumFont_TTF_ALL.zip -d NanumFont
+    rm -f NanumFont_TTF_ALL.zip
+    mv NanumFont /usr/share/fonts/
+    fc-cache -f -v
+    ```
 
-3. Download [the model files](https://drive.google.com/drive/folders/1aKOKMjdFcnGWdZo_VywG9pwlRyiUCodc) and move to models folder.
+4. Download [the model files](https://drive.google.com/drive/folders/1aKOKMjdFcnGWdZo_VywG9pwlRyiUCodc) and move to models folder.
    
    
 ### Run
