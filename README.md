@@ -14,7 +14,7 @@ The object detector is based on [faster-rcnn.pytorch](https://github.com/jwyang/
     pip install -r requirements.txt
     ```
 
-2. Make model folder and copy faster-rcnn.pytorch/cfgs folder to models/
+2. create a model folder
     ```bash
     mkdir models/InstModel
     ```
